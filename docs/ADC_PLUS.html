@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自主導航智慧藥櫃開發計畫 — 輔導計畫書 v0.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lightbox:#EEF1F4;
+  --paper:#FFFFFF;
+  --ink:#13171B;
+  --graphite:#5C666F;
+  --rule:#D2D9DF;
+  --rule-soft:#E4E9ED;
+  --verify:#1B4D8F;
+  --halt:#A81E28;
+  --hold:#8A6A12;
+  --mono:"IBM Plex Mono","Roboto Mono",ui-monospace,monospace;
+  --sans:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--lightbox);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.75;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+
+.masthead{border-bottom:1px solid var(--rule)}
+.mast-inner{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:18px 0;flex-wrap:wrap}
+.mark{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--graphite)}
+.mark b{color:var(--ink);font-weight:600}
+.meta{font-family:var(--mono);font-size:11px;color:var(--graphite);letter-spacing:.06em}
+
+.hero{padding:72px 0 6px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--verify);margin-bottom:22px}
+h1{font-weight:900;font-size:clamp(31px,5.2vw,55px);line-height:1.13;letter-spacing:-.02em;margin:0 0 26px;max-width:20ch}
+h1 em{font-style:normal;display:block;color:var(--graphite);font-weight:500;font-size:.45em;letter-spacing:0;line-height:1.6;margin-top:20px;max-width:46ch}
+.thesis{max-width:60ch;font-size:17px;border-left:2px solid var(--ink);padding-left:20px;margin:0 0 50px}
+
+/* flow chain */
+.chain{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin:0 0 12px}
+.node{background:var(--paper);padding:20px 18px 22px;position:relative}
+.node .ni{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--verify);margin-bottom:9px}
+.node h4{margin:0 0 7px;font-size:15px;font-weight:700;letter-spacing:-.005em}
+.node p{margin:0;font-size:13px;color:var(--graphite);line-height:1.6}
+.node.terminal{background:#F7F9FB}
+.node .bar{position:absolute;left:0;right:0;bottom:0;height:3px}
+.chain-key{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;color:var(--graphite);text-transform:uppercase;margin-bottom:38px}
+
+/* instrument */
+.instrument{background:var(--paper);border:1px solid var(--rule);padding:30px 30px 26px;margin-bottom:16px}
+.inst-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:6px}
+.inst-title{font-weight:700;font-size:17px;margin:0}
+.inst-note{font-family:var(--mono);font-size:10.5px;color:var(--graphite);letter-spacing:.08em;text-transform:uppercase}
+.inst-sub{color:var(--graphite);font-size:14px;margin:6px 0 22px;max-width:64ch}
+svg.plot{width:100%;height:auto;display:block}
+.ctrl{margin-top:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ctrl label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--graphite);white-space:nowrap;min-width:96px}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:180px;height:2px;background:var(--rule);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--paper);border:2px solid var(--verify);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--paper);border:2px solid var(--verify);cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--verify);outline-offset:6px}
+.ctrl output{font-family:var(--mono);font-size:12px;min-width:38px;text-align:right}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:22px}
+.readout div{background:var(--paper);padding:16px 18px}
+.readout .rk{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--graphite);display:block;margin-bottom:6px}
+.readout .rv{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.readout .rd{font-size:12px;color:var(--graphite);margin-top:8px;line-height:1.5}
+.rv.far{color:var(--halt)} .rv.hold{color:var(--hold)} .rv.base{color:var(--verify)}
+
+.layout{display:grid;grid-template-columns:170px 1fr;gap:56px;padding:68px 0 30px;align-items:start}
+nav.toc{position:sticky;top:26px;font-family:var(--mono);font-size:11.5px;line-height:1.9;border-top:1px solid var(--ink);padding-top:12px}
+nav.toc a{display:block;color:var(--graphite);text-decoration:none;letter-spacing:.03em;padding:1px 0}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink)}
+nav.toc a .n{display:inline-block;width:30px;color:var(--rule)}
+main{min-width:0;max-width:74ch}
+
+section{padding-bottom:62px}
+h2{font-size:26px;font-weight:900;letter-spacing:-.015em;margin:0 0 6px;padding-top:14px;border-top:1px solid var(--ink)}
+h2 .sec{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--verify);letter-spacing:.14em;display:block;margin-bottom:12px}
+.lede{color:var(--graphite);font-size:15px;margin:10px 0 28px;max-width:58ch}
+h3{font-size:16.5px;font-weight:700;margin:32px 0 10px;letter-spacing:-.005em}
+p{margin:0 0 15px}
+ul{margin:0 0 16px;padding-left:0;list-style:none}
+ul li{position:relative;padding-left:20px;margin-bottom:9px}
+ul li::before{content:"";position:absolute;left:0;top:11px;width:7px;height:1px;background:var(--graphite)}
+code{font-family:var(--mono);font-size:.9em;background:var(--rule-soft);padding:1px 5px}
+
+.decisions{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);margin:24px 0 8px}
+.dec{background:var(--paper);padding:24px 26px}
+.dec .dk{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--verify);margin-bottom:10px}
+.dec h4{margin:0 0 10px;font-size:16px;font-weight:700}
+.dec p{margin:0;font-size:14.5px}
+.dec p + p{margin-top:10px}
+.versus{font-family:var(--mono);font-size:12px;color:var(--graphite);margin-top:12px;padding-top:11px;border-top:1px dashed var(--rule)}
+.versus b{color:var(--halt);font-weight:600}
+
+.pipe{border:1px solid var(--rule);background:var(--paper);margin:22px 0}
+.stage{display:grid;grid-template-columns:52px 1fr;border-bottom:1px solid var(--rule-soft)}
+.stage:last-child{border-bottom:none}
+.stage .idx{font-family:var(--mono);font-size:12px;color:var(--verify);border-right:1px solid var(--rule-soft);display:flex;align-items:center;justify-content:center;background:#F7F9FB}
+.stage .body{padding:16px 20px}
+.stage h5{margin:0 0 5px;font-size:14.5px;font-weight:700}
+.stage p{margin:0;font-size:13.5px;color:var(--graphite);line-height:1.65}
+
+.tbl{width:100%;border-collapse:collapse;margin:20px 0 8px;font-size:14px}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--graphite);font-weight:500;padding:0 14px 9px 0;border-bottom:1px solid var(--ink);white-space:nowrap}
+.tbl td{padding:13px 14px 13px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+.tbl td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.scroller{overflow-x:auto;margin:0 -28px;padding:0 28px}
+
+.flag{border-left:2px solid var(--halt);padding:2px 0 2px 20px;margin:26px 0;font-size:14.5px}
+.flag .ft{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--halt);display:block;margin-bottom:7px}
+.flag p{margin:0}
+
+/* figures */
+figure.fig{margin:30px 0 8px;background:var(--paper);border:1px solid var(--rule);padding:22px 22px 18px}
+figure.fig img{display:block;width:100%;height:auto;margin:0 auto}
+figure.fig figcaption{font-size:13px;color:var(--graphite);line-height:1.65;margin-top:16px;padding-top:13px;border-top:1px solid var(--rule-soft)}
+figure.fig figcaption b{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--verify);font-weight:500;display:block;margin-bottom:6px}
+.flag p + p{margin-top:10px}
+
+.gates{margin:22px 0}
+.gaterow{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:18px 0;border-bottom:1px solid var(--rule)}
+.gaterow:first-child{border-top:1px solid var(--rule)}
+.gaterow .when{font-family:var(--mono);font-size:12px;color:var(--verify);letter-spacing:.05em;padding-top:2px}
+.gaterow h5{margin:0 0 6px;font-size:15px;font-weight:700}
+.gaterow p{margin:0;font-size:13.8px;color:var(--graphite)}
+.gaterow .crit{margin-top:9px;font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--rule-soft);padding:8px 11px;line-height:1.6}
+
+footer{border-top:1px solid var(--ink);padding:26px 0 60px;font-family:var(--mono);font-size:11px;color:var(--graphite);letter-spacing:.06em;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr;gap:0;padding-top:44px}
+  nav.toc{position:static;margin-bottom:44px;columns:2;column-gap:24px}
+  .readout,.chain{grid-template-columns:1fr}
+  .hero{padding-top:46px}
+  .instrument{padding:22px 18px}
+  .wrap{padding:0 20px}
+  .scroller{margin:0 -20px;padding:0 20px}
+  .ctrl label{min-width:0}
+}
+
+nav.toc a.sub{padding-left:30px;font-size:11px;color:#8A939B}
+nav.toc a.sub .n{width:16px}
+nav.toc a.top{margin-top:7px}
+.gantt{border:1px solid var(--rule);background:var(--paper);margin:22px 0 10px;font-size:12px;overflow:hidden}
+.grow{display:grid;grid-template-columns:190px repeat(16,1fr);border-bottom:1px solid var(--rule-soft)}
+.grow:last-child{border-bottom:none}
+.grow.head{border-bottom:1px solid var(--ink)}
+.gcell{border-right:1px solid var(--rule-soft);min-height:34px;position:relative}
+.gcell:last-child{border-right:none}
+.glabel{padding:9px 12px;border-right:1px solid var(--rule);display:flex;align-items:center;line-height:1.4;font-size:12.5px}
+.grow.head .glabel{background:#F7F9FB;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--graphite)}
+.grow.head .gcell{background:#F7F9FB;font-family:var(--mono);font-size:10px;color:var(--graphite);display:flex;align-items:center;justify-content:center;min-height:26px}
+.gbar{position:absolute;top:9px;bottom:9px;left:2px;right:2px;background:var(--verify)}
+.gbar.soft{background:#9FB4CE}
+.gmark{position:absolute;top:0;bottom:0;left:50%;width:2px;background:var(--halt);transform:translateX(-1px)}
+.gmark span{position:absolute;top:5px;left:5px;font-family:var(--mono);font-size:9.5px;color:var(--halt);font-weight:600}
+.gantt-key{font-family:var(--mono);font-size:10.5px;color:var(--graphite);letter-spacing:.08em;text-transform:uppercase;display:flex;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.gantt-key i{display:inline-block;width:9px;height:9px;margin-right:6px;position:relative;top:1px}
+.gwrap{overflow-x:auto;margin:0 -28px;padding:0 28px}
+.gantt{min-width:760px}
+h3{scroll-margin-top:20px}
+.subhead{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--verify);margin:38px 0 -4px}
+@media(max-width:900px){nav.toc{columns:1}.gwrap{margin:0 -20px;padding:0 20px}}
+
+.gantt.w24{min-width:1020px}
+.gantt.w16{min-width:920px}
+.gantt.m10{min-width:760px}
+.gantt.m10 .grow{grid-template-columns:230px repeat(10,1fr)}
+@media(max-width:900px){.gantt.m10 .grow{grid-template-columns:170px repeat(10,1fr)}}
+.gantt.w24 .grow{grid-template-columns:210px repeat(24,1fr)}
+.chain.c5{grid-template-columns:repeat(5,1fr)}
+@media(max-width:900px){.gantt.w24 .grow{grid-template-columns:150px repeat(24,1fr)}}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap mast-inner">
+    <div class="mark"><b>自主導航智慧藥櫃</b> ／ 開發計畫</div>
+    <div class="meta">輔導計畫書 · v0.2 · 2026-08-28 · 十六週 · 尚未啟動</div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">智慧化應用與 AI 技術導入輔導 · 十六週</div>
+    <h1>以身分驅動開盒，<br>以紀錄承接責任。
+      <em>本案以現有 AMR 為載體，開發智慧型抽屜 payload 與人臉辨識模組，使藥品存取由人工判斷改為由身分辨識結果驅動，並於每一次存取留下可回溯之結構化紀錄。</em>
+    </h1>
+    <p class="thesis">本案之核心產出不是移動能力，而是<strong>可追溯的存取紀錄鏈</strong>。設備由單純運送平台升級為具身分辨識與精準存取能力之照護輔具，其價值在於每一次藥盒開啟都能明確對應到人員、病患、時間與格位。</p>
+  </div>
+
+  <div class="chain c5">
+    <div class="node"><div class="ni">01</div><h4>護理站待命</h4><p>藥櫃停靠護理站旁，人員於日常動線即可完成身分確認，不需另行前往打卡設備。</p><div class="bar" style="background:var(--verify)"></div></div>
+    <div class="node"><div class="ni">02</div><h4>人員身分確認</h4><p>以人臉辨識確認操作人員身分，出勤狀態由觸控面板選定，系統記錄工作狀態。</p><div class="bar" style="background:var(--verify)"></div></div>
+    <div class="node"><div class="ni">03</div><h4>自主導航配送</h4><p>AMR 搭載智慧型抽屜 payload 前往指定病床或定點，抽屜於抵達前維持鎖定。</p><div class="bar" style="background:var(--verify)"></div></div>
+    <div class="node"><div class="ni">04</div><h4>病患身分確認</h4><p>以人臉辨識確認對象；辨識未通過或信心不足者，轉由人員手動確認，不自動開盒。</p><div class="bar" style="background:var(--hold)"></div></div>
+    <div class="node terminal"><div class="ni">05</div><h4>開盒與紀錄</h4><p>開啟對應藥盒上蓋，取放完成後自動關閉，上傳含人員、病患、格位與時間之存取事件。</p><div class="bar" style="background:linear-gradient(90deg,var(--halt) 0 18%,var(--hold) 18% 40%,var(--verify) 40% 100%)"></div></div>
+  </div>
+  <div class="chain-key">身分辨識為開盒之前置條件，未通過辨識者不自動開啟藥盒</div>
+
+  <div class="instrument">
+    <div class="inst-head">
+      <h2 class="inst-title" style="border:none;padding:0;font-size:17px;font-weight:700">身分辨識指標之定義</h2>
+      <span class="inst-note">示意模型／非實測資料</span>
+    </div>
+    <p class="inst-sub">當辨識結果直接驅動藥盒開啟時，「正確率」不足以描述系統安全性。真正該被規範的是<strong>誤認率</strong>——把甲認成乙的機率。誤認會隨每日給藥人次累積，其發生機率與規格要求可由下列關係反推。</p>
+
+    <svg class="plot" viewBox="0 0 720 250" role="img" aria-label="單次誤認率與每日至少發生一次誤認機率之關係示意圖">
+      <defs><clipPath id="clipPlot"><rect x="52" y="14" width="640" height="176"/></clipPath></defs>
+      <line x1="52" y1="190" x2="692" y2="190" stroke="#13171B" stroke-width="1"/>
+      <g clip-path="url(#clipPlot)">
+        <path id="curve" fill="#A81E28" fill-opacity="0.10" stroke="#A81E28" stroke-width="1.6"/>
+        <line id="vline" y1="14" y2="190" stroke="#13171B" stroke-width="1.6"/>
+        <circle id="dot" r="4.5" fill="#13171B"/>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="#5C666F">
+        <text x="44" y="194" text-anchor="end">0%</text>
+        <text x="44" y="110" text-anchor="end">50%</text>
+        <text x="44" y="28" text-anchor="end">100%</text>
+        <text x="52" y="208">0.01%</text>
+        <text x="372" y="208" text-anchor="middle">1%</text>
+        <text x="692" y="208" text-anchor="end">10%</text>
+        <text x="372" y="232" text-anchor="middle" letter-spacing="1.4">單次誤認率（對數刻度）／ 縱軸為每日至少發生一次誤認之機率</text>
+      </g>
+    </svg>
+
+    <div class="ctrl">
+      <label for="far">單次誤認率</label>
+      <input type="range" id="far" min="-4" max="-1" step="0.02" value="-1" aria-label="單次誤認率">
+      <output id="oFar">10%</output>
+    </div>
+    <div class="ctrl">
+      <label for="np">每日給藥人次</label>
+      <input type="range" id="np" min="20" max="150" step="5" value="90" aria-label="每日給藥人次">
+      <output id="oNp">90</output>
+    </div>
+
+    <div class="readout">
+      <div>
+        <span class="rk">每日誤認機率</span>
+        <span class="rv far" id="vDay">—</span>
+        <p class="rd">單日之中至少發生一次身分誤認的機率。</p>
+      </div>
+      <div>
+        <span class="rk">每月誤認次數</span>
+        <span class="rv hold" id="vMon">—</span>
+        <p class="rd">以三十日計之誤認次數期望值。</p>
+      </div>
+      <div>
+        <span class="rk">達成月均 &lt; 1 次所需規格</span>
+        <span class="rv base" id="vReq">—</span>
+        <p class="rd">於目前給藥人次下，單次誤認率須低於此值。</p>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--graphite);margin:16px 0 0">此模型說明「辨識正確率 90%」作為安全規格並不充分。惟本案為<strong>封閉集比對</strong>——單一病房登錄人數有限，且系統已知應為哪一位病患，屬一對一驗證而非開放式辨識，實際可達之誤認率遠低於一般辨識任務。因此正確作法並非放寬需求，而是將指標改以誤認率與誤拒率分列表達，並保留人工確認備援，詳見（三）之 4。</p>
+  </div>
+</div>
+
+<div class="wrap layout">
+  <nav class="toc" aria-label="章節目錄">
+    <a class="top" href="#s1"><span class="n">一</span>問題與需求</a>
+    <a class="top" href="#s2"><span class="n">二</span>解決方案</a>
+    <a class="sub" href="#s2-1"><span class="n">1</span>系統情境</a>
+    <a class="sub" href="#s2-2"><span class="n">2</span>A1 分項</a>
+    <a class="sub" href="#s2-3"><span class="n">3</span>B1 分項</a>
+    <a class="sub" href="#s2-4"><span class="n">4</span>B2 分項</a>
+    <a class="sub" href="#s2-5"><span class="n">5</span>B3 分項</a>
+    <a class="top" href="#s3"><span class="n">三</span>計畫架構及執行方式</a>
+    <a class="sub" href="#s3-1"><span class="n">1</span>計畫架構</a>
+    <a class="sub" href="#s3-2"><span class="n">2</span>智慧化層次</a>
+    <a class="sub" href="#s3-3"><span class="n">3</span>AI 技術應用</a>
+    <a class="sub" href="#s3-4"><span class="n">4</span>風險與因應</a>
+    <a class="top" href="#s4"><span class="n">四</span>查核工作項目及進度</a>
+    <a class="top" href="#s5"><span class="n">五</span>預期計畫效益</a>
+  </nav>
+
+  <main>
+
+  <section id="s1">
+    <h2><span class="sec">（一）</span>業者面臨問題與需求</h2>
+
+    <h3>1、面臨問題</h3>
+    <p>長照與醫療場域人力負擔日益加重，照護流程中仍存在大量仰賴人工操作與經驗判斷之環節，致使效率與作業正確性難以兼顧。主要問題如下：</p>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>問題</th><th>現況</th><th>影響</th></tr></thead>
+      <tbody>
+        <tr><td><strong>人員管理不易</strong></td><td>出勤打卡與工時紀錄採刷卡、指紋或人工登錄，人員須另行前往指定設備操作</td><td>易受設備接觸限制與代刷行為影響，出勤資料正確性不足，且打卡動作中斷照護作業</td></tr>
+        <tr><td><strong>硬體功能與擴充彈性不足</strong></td><td>現有設備多以單一功能設計，缺乏自動化控制與模組化架構</td><td>場域需求改變或新增功能時須重新配置設備，系統整合與後續擴充成本偏高</td></tr>
+        <tr><td><strong>用藥流程風險</strong></td><td>已導入 AMR 協助物資移動，惟藥品存取仍仰賴人工辨識與操作</td><td>缺乏身分驗證與存取控管機制，存在誤取藥品與流程中斷風險，且事後難以還原操作過程</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>2、業者需求</h3>
+    <ul>
+      <li>導入非接觸式人員識別機制，提升出勤管理與操作紀錄之準確性。</li>
+      <li>以模組化硬體設計，開發具自動控制與功能擴充能力之智慧型抽屜系統，提升設備彈性與應用擴展能力。</li>
+      <li>建立具身分辨識與存取控管功能之藥品管理流程，降低用藥錯誤風險並強化照護安全。</li>
+      <li>使既有 AMR 由單純移動平台升級為具管理功能之自主導航智慧藥櫃，提升設備競爭力。</li>
+    </ul>
+  </section>
+
+  <section id="s2">
+    <h2><span class="sec">（二）</span>解決方案</h2>
+    <p class="lede">本案以現有 AMR 為載體，整合「人員管理」與「智慧給藥」兩大功能模組，應用於醫院及長照機構之護理站與病房照護情境。</p>
+
+    <div class="flag">
+      <span class="ft">本版調整說明</span>
+      <p>相較前版，本版刪除下列內容：<strong>C 非接觸量測系統（rPPG 生命體徵量測）分項</strong>、<strong>手勢辨識機制</strong>、<strong>語音擷取與記錄機制</strong>。情境流程、計畫架構、智慧化層次表、AI 技術項目與查核表均同步調整。</p>
+      <p>刪除後之效果：本案不再包含以鏡頭量測血壓、血氧之功能宣稱，可避免衍生醫療器材認定爭議；移除語音擷取後，亦不涉及病患及同室他人談話之錄音爭議。計畫範圍集中於<strong>人臉辨識驅動之存取控管</strong>此一核心命題，於十六週期程內具可執行性。</p>
+      <p>出勤狀態之輸入改由設備觸控面板選定，身分則由人臉辨識確認；追溯功能改以結構化存取事件紀錄承擔，不依賴語音內容。</p>
+    </div>
+
+    <h3 id="s2-1">1、系統情境說明</h3>
+    <p>自主導航智慧藥櫃平時停靠於護理站附近待命。護理人員於日常工作動線上，透過人臉辨識完成身分確認，並於觸控面板選定上班、下班或休息等狀態，系統即時記錄工作狀態。</p>
+    <p>需執行藥品配送或給藥作業時，AMR 搭載智慧型抽屜 payload 自主導航前往指定病房。抵達後由系統以人臉辨識確認病患身分，確認通過後自動開啟對應病患之藥盒上蓋；取放完成後藥盒自動關閉，上位系統記錄本次存取事件，內容包含操作人員、病患對象、辨識信心值、藥盒格位、開啟與關閉時間，以及是否經人工確認。</p>
+    <p>透過上述流程，原本依賴人工操作與口頭確認之給藥作業，升級為具「身分辨識」、「存取控管」與「事件紀錄」之照護輔助系統，降低人為操作錯誤，並建立可追溯之照護紀錄。</p>
+
+    <figure class="fig">
+      <img src="media/hardware-structure.png" alt="自主導航智慧藥櫃硬體架構圖：頂部觸控面板與 Face ID 辨識模組、中段五層智慧型抽屜 payload、底部自主導航 AMR 移動平台。" loading="lazy" decoding="async">
+      <figcaption><b>圖一　系統硬體架構</b>設備由三個層級構成：頂部之觸控面板與人臉辨識模組承擔人員管理與病患身分確認（A1、B2）；中段五層式智慧型抽屜 payload 承擔精準存取（B1）；底部為現有自主導航 AMR 移動平台。本案之開發範圍為上方兩層，移動平台沿用既有產品。</figcaption>
+    </figure>
+
+    <div class="flag">
+      <span class="ft">與臨床核對程序之關係</span>
+      <p>本系統之身分辨識與存取紀錄，定位為<strong>輔助核對與過程留存</strong>，不取代護理人員既有之臨床核對程序。</p>
+      <p>本項須於計畫說明與教育訓練文件中明確界定，避免場域端誤解系統可替代臨床核對責任；操作介面亦不呈現「核對完成」等易生誤解之用語。</p>
+    </div>
+
+    <h3 id="s2-2">2、A1　人員身分辨識與出勤紀錄開發</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <tbody>
+        <tr><td style="width:70px"><strong>原有</strong></td><td>出勤打卡與工時紀錄依賴識別卡、指紋或人工操作，人員須特地前往指定設備位置打卡，易中斷照護作業，且常發生代刷、誤刷或遺漏登錄，導致出勤與實際工作狀態難以即時掌握，資料可追溯性不足。</td></tr>
+        <tr><td><strong>新增</strong></td><td>導入人臉辨識人員身分確認機制，並將設備待機位置設置於護理站旁，使人員於日常工作動線即可完成操作。系統先行人臉辨識確認身分，辨識成功後於觸控面板選定上班、下班、休息開始或休息結束等狀態，兩者合併為一次操作並自動寫入出勤紀錄。系統並參考國際醫護人員工時管理概念（如約每四小時安排休息），協助機構掌握人員工作節奏。</td></tr>
+        <tr><td><strong>差異</strong></td><td>由接觸式刷卡改為非接觸辨識，且身分由生物特徵確認而非卡片持有，可消除代刷情形；打卡位置移至日常動線上，不再中斷照護作業。系統自動記錄並回溯至實際人員，提升人資、排班與稽核之資料正確性。出勤紀錄正確率預期提升至 95% 以上。</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:13.5px;color:var(--graphite)">說明：現況出勤紀錄正確率之基線值須於計畫初期實地量測取得，不採推估值，以確保提升幅度可被驗證。</p>
+
+    <h3 id="s2-3">3、B1　智慧型抽屜（payload）開發</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <tbody>
+        <tr><td style="width:70px"><strong>原有</strong></td><td>現行 AMR 多僅作為藥品運送平台，藥品仍需由護理人員自行開啟抽屜、尋找藥盒並核對病人身分，流程冗長且高度依賴人工作業，易因誤取、錯放或病人辨識錯誤而增加用藥風險與護理負擔。</td></tr>
+        <tr><td><strong>新增</strong></td><td>開發智慧型抽屜 payload，採五層式模組抽屜結構，每層可由上位系統獨立控制開啟與關閉，抽屜內配置可更換之功能模組。預設配置下每層內建 9 宮格藥盒模組，各藥盒具獨立上蓋致動機構。AMR 抵達病床或指定位置後進行病患身分確認，通過後自動開啟對應藥盒上蓋，完成取放後立即關閉，上位系統同步記錄存取事件。</td></tr>
+        <tr><td><strong>差異</strong></td><td>AMR 由單純移動平台升級為具身分辨識、精準存取與可擴充能力之自主導航智慧藥櫃。藥盒開啟精準對應至個別病患，降低誤取與錯用風險，並減少人員逐一尋找與開啟之操作步驟。單次藥品存取時間預期由 20–30 秒縮短至 10 秒以內。</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:13.5px;color:var(--graphite)">說明：單次存取時間之量測邊界須先行定義（建議自身分辨識啟動起算至藥盒關閉止，不含 AMR 移動時間），並以同一批人員於導入前後比對，以排除熟練度差異。</p>
+
+    <figure class="fig">
+      <img src="media/cabinet-design.png" alt="智慧型抽屜 payload 設計圖：左為五層模組化抽屜之整體外觀，右為單層抽屜開啟後之九宮格藥盒模組，各藥盒上蓋可依病患身分獨立開啟。" loading="lazy" decoding="async">
+      <figcaption><b>圖二　智慧型抽屜 payload</b>左：payload 整體外觀，五層模組抽屜各自獨立控制。右：抽屜可分層開啟，層內配置九宮格藥盒模組，各藥盒具獨立上蓋致動機構，於病患身分確認通過後僅開啟對應格位，取放完成即自動關閉並回寫存取事件。</figcaption>
+    </figure>
+
+    <h3 id="s2-4">4、B2　病患身分辨識與存取紀錄開發</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <tbody>
+        <tr><td style="width:70px"><strong>原有</strong></td><td>給藥流程多由護理人員人工核對病患身分並開啟藥盒，過程主要依賴口頭確認與人工紀錄，缺乏完整數位化記錄機制。發生給藥爭議或流程問題時，難以追溯實際操作過程與確認責任歸屬。</td></tr>
+        <tr><td><strong>新增</strong></td><td>建置病患臉部特徵資料庫並開發人臉辨識演算法，於確認病患身分後透過通訊協定（如 MQTT）發送控制指令開啟對應藥盒。同時建立結構化存取事件紀錄，欄位包含操作人員、病患對象、辨識信心值、藥盒格位、開啟與關閉時間、是否經人工確認，並提供依人員、病患或期間之查詢功能。</td></tr>
+        <tr><td><strong>差異</strong></td><td>由人工辨識與紙本紀錄，改為身分辨識結果與存取事件之連動留存，使每次給藥操作均可回溯至實際人員、對象與格位，提升用藥流程透明度與機構管理可靠性。紀錄以結構化欄位為主，可直接支援查詢與統計，無須事後轉譯。</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="flag">
+      <span class="ft">臉部特徵資料之處理原則</span>
+      <p>病患與人員之臉部特徵資料屬個人生物特徵資料。本案須於計畫初期完成下列項目：取得場域單位之使用同意與告知程序、界定資料保存期限與存取權限、特徵資料以不可還原之特徵向量形式儲存而不保留原始影像。</p>
+      <p>本項屬導入前提，須列為第一個查核點之前置作業。</p>
+    </div>
+
+    <h3 id="s2-5">5、B3　系統整合測試</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <tbody>
+        <tr><td style="width:70px"><strong>原有</strong></td><td>payload 開發完成後，若缺乏系統層級之整合與驗證，易於實際場域出現辨識錯誤、控制邏輯不一致或流程中斷等問題，影響設備穩定度與導入成熟度。</td></tr>
+        <tr><td><strong>新增</strong></td><td>規劃系統整合測試與功能驗證，涵蓋 A1 人員身分辨識、B1 智慧型抽屜 payload 與 B2 病患身分辨識及存取紀錄，針對抽屜與藥盒開啟邏輯、身分辨識指令傳遞、存取紀錄正確性、辨識失敗時之人工備援流程，以及實際照護流程運作完整性等項目進行系統化測試。</td></tr>
+        <tr><td><strong>差異</strong></td><td>由單一模組測試提升為系統化整合測試，可於開發階段即提前發現跨模組介接與流程協調問題，並彙整測試結果作為後續優化依據，確保交付設備具備可實際導入之穩定性。</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="s3">
+    <h2><span class="sec">（三）</span>計畫架構及執行方式</h2>
+
+    <h3 id="s3-1">1、計畫架構</h3>
+    <p>本案分為兩大分項、四個子項。</p>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>分項</th><th>子項</th><th>主要交付</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A 智慧辨識模組設計</strong></td><td>A1 人員身分辨識與出勤紀錄開發</td><td>可實際操作之軟體一套</td></tr>
+        <tr><td rowspan="3"><strong>B 智慧型 payload 設計</strong></td><td>B1 智慧型抽屜開發</td><td>機構設計圖一份、payload 原型硬體一組</td></tr>
+        <tr><td>B2 病患身分辨識與存取紀錄開發</td><td>可實際操作之軟體一套</td></tr>
+        <tr><td>B3 系統整合測試</td><td>系統整合測試報告一份</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 id="s3-2">2、智慧化應用與性能提升輔導</h3>
+    <p>本案導入之智慧化應用服務模組與其智慧化層次對應如下。</p>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>模組</th><th>L2 可視化</th><th>L3 透明化</th><th>L4 可預測</th><th>L5 自適化</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A1</strong> 人員身分辨識與出勤紀錄</td><td>透過人臉辨識即時顯示辨識人員身分與出勤狀態，將原本隱性之出勤行為轉為可即時掌握之系統資訊。</td><td>出勤紀錄結合人臉身分驗證結果，確保每筆資料可回溯至實際人員，消除代刷與誤刷情形。</td><td>累積人員出勤與操作行為資料後，可作為人力排班與工作負載分析之基礎，支援後續智慧化管理應用。</td><td>無</td></tr>
+        <tr><td><strong>B1</strong> 智慧型抽屜 payload</td><td>藥品配送流程中即時顯示抽屜與藥盒開啟狀態，使人員清楚掌握藥品存取流程。</td><td>抽屜與藥盒開啟行為皆與病患身分辨識結果連動，確保每次存取皆有明確對應關係，降低人為錯誤。</td><td>透過模組化 payload 設計與系統記錄，可分析不同場域之用藥與配送模式，作為功能擴充與流程優化依據。</td><td>無</td></tr>
+        <tr><td><strong>B2</strong> 病患身分辨識與存取紀錄</td><td>即時顯示病患身分辨識結果與藥盒存取狀態，將給藥過程由人工隱性流程轉為可視化系統資訊。</td><td>每次給藥行為皆留存身分辨識結果與存取事件欄位，形成可追溯資料鏈，明確對應人員、對象、格位與時間。</td><td>累積存取紀錄後，可分析異常存取頻率、重複開啟行為或給藥延遲情形，作為風險預警之優化依據。</td><td>無</td></tr>
+        <tr><td><strong>B3</strong> 系統整合測試</td><td>將各模組測試結果以系統化方式呈現，確保整體運作狀態可被檢視。</td><td>透過整合測試確認身分辨識、存取紀錄與抽屜控制間之資料與指令流一致性，降低系統整合風險。</td><td>無</td><td>無</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3 id="s3-3">3、AI 技術應用與導入</h3>
+    <p>本案以<strong>人臉辨識</strong>為單一核心 AI 技術，應用於兩個對象，兩者之任務型態與指標要求不同：</p>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>應用對象</th><th>任務型態</th><th>使用情境</th><th>指標重點</th></tr></thead>
+      <tbody>
+        <tr><td><strong>操作人員</strong></td><td>一對多識別（護理站登錄人員）</td><td>站立、正面、光線穩定、可配合鏡頭</td><td>以出勤紀錄正確率為主；誤認之後果為紀錄錯誤，可事後更正</td></tr>
+        <tr><td><strong>病患</strong></td><td>一對一驗證（系統已知應為何人）</td><td>臥床、光線不足、可能配戴口罩或管路、可能睡眠中</td><td>以誤認率為主；誤認之後果為開啟他人藥盒，須嚴格管控並具人工備援</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>兩者雖共用辨識演算法，惟註冊流程、影像條件與門檻設定須分別設計。病患辨識屬一對一驗證，可設定明顯較嚴之誤認門檻，並以提高誤拒率換取安全性——誤拒僅需人員手動確認，代價遠低於誤認。</p>
+
+    <h3 id="s3-4">4、執行風險與因應措施</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>風險項目</th><th>成因</th><th>因應措施</th></tr></thead>
+      <tbody>
+        <tr><td><strong>身分辨識指標定義不足</strong></td><td>以「正確率」單一數值表達，未區分誤認與誤拒</td><td>指標改以誤認率與誤拒率分列；病患辨識之誤認門檻明顯嚴於誤拒門檻；低信心結果一律轉人工確認，不自動開盒</td></tr>
+        <tr><td><strong>病房環境之人臉辨識條件不利</strong></td><td>病患臥床、光線不足、配戴口罩或管路、睡眠中或意識不清、外觀改變</td><td>建立備援辨識路徑（如手圈條碼或人員代為確認），列為必要功能而非選配；註冊影像須涵蓋臥姿與實際照明條件；辨識失敗率納入整合測試統計項目</td></tr>
+        <tr><td><strong>致動器交期為關鍵路徑</strong></td><td>五層各 9 格共 45 組上蓋致動機構，另加 5 組抽屜致動，數量大且十六週期程無緩衝</td><td>長料件與致動器須於 CP1-1 前完成選型與下單；設計階段先以單層試作驗證致動可靠度，再行全機投產</td></tr>
+        <tr><td><strong>致動器數量偏多影響可靠度與成本</strong></td><td>50 組致動機構之線束複雜度、耗電與故障點</td><td>原型階段評估致動器壽命與耗電；預留「以層級控制搭配格位指示」之簡化配置選項，作為量產成本與可靠度之替代方案</td></tr>
+        <tr><td><strong>payload 重心與 AMR 介面</strong></td><td>payload 尺寸達 60×60×110 cm，抽屜開啟時重心外移</td><td>設計階段即與 AMR 廠商確認承載、重心與電氣介面規格；抽屜開啟狀態下限制 AMR 移動</td></tr>
+        <tr><td>臉部特徵資料之個資處理</td><td>臉部特徵屬個人生物特徵資料</td><td>依（二）之 4 所列原則辦理，同意程序列為 CP1-1 前置作業</td></tr>
+        <tr><td>臨床端對系統定位之誤解</td><td>可能誤認系統可取代臨床核對程序</td><td>於教育訓練與 SOP 文件中明確界定系統為輔助核對與紀錄工具</td></tr>
+        <tr><td>效益基線未取得</td><td>出勤正確率與存取時間之現況值未實測</td><td>計畫啟動後第一週即展開基線量測，列為 CP1-1 查核內容</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <section id="s4">
+    <h2><span class="sec">（四）</span>查核工作項目及執行進度</h2>
+    <p class="lede">本案期程為十六週，自計畫核定後起算，週次為相對週。含六項工作項目、七個查核點，各工作項目設 1 至 2 個查核點。</p>
+
+    <div class="gwrap"><div class="gantt w16"><div class="grow head"><div class="glabel">工作項目</div><div class="gcell">W1</div><div class="gcell">W2</div><div class="gcell">W3</div><div class="gcell">W4</div><div class="gcell">W5</div><div class="gcell">W6</div><div class="gcell">W7</div><div class="gcell">W8</div><div class="gcell">W9</div><div class="gcell">W10</div><div class="gcell">W11</div><div class="gcell">W12</div><div class="gcell">W13</div><div class="gcell">W14</div><div class="gcell">W15</div><div class="gcell">W16</div></div><div class="grow"><div class="glabel">WP1 系統規格與介面定義</div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP1-1</span></div></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP2-1 抽屜機構設計</div><div class="gcell"></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP2-1</span></div></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP2-2 payload 原型製作</div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP2-2</span></div></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP3 人員身分辨識與出勤</div><div class="gcell"></div><div class="gcell"></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP3-1</span></div></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP4 病患身分辨識與紀錄</div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP4-1</span></div></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP5 系統整合測試</div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div></div><div class="gcell"><div class="gbar"></div><div class="gmark"><span>CP5-1</span></div></div><div class="gcell"></div><div class="gcell"></div></div><div class="grow"><div class="glabel">WP6 教育訓練與成果報告</div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"><div class="gbar soft"></div></div><div class="gcell"><div class="gbar soft"></div></div><div class="gcell"><div class="gbar soft"></div></div><div class="gcell"><div class="gbar soft"></div><div class="gmark"><span>CP6-1</span></div></div></div></div></div>
+    <div class="gantt-key">
+      <span><i style="background:var(--verify)"></i>開發工作</span>
+      <span><i style="background:#9FB4CE"></i>報告與教育訓練</span>
+      <span><i style="background:var(--halt)"></i>查核點</span>
+    </div>
+    <p style="font-size:14px;color:var(--graphite)">關鍵路徑為 WP2 抽屜 payload：機構設計（W2–W5）與原型製作（W5–W8）之間無緩衝，且致動器交期直接影響原型完成時點，須於 W3 前完成下單。W8 為期中查核，累計進度須達 60%。</p>
+
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>查核點</th><th>工作項目</th><th>完成週次</th><th>查核內容與量化指標</th><th>累計進度</th></tr></thead>
+      <tbody>
+        <tr><td class="num">CP1-1</td><td>WP1 系統規格與介面定義</td><td class="num">W3</td><td>系統規格書一份，含 AMR 承載與電氣介面規格、藥盒格位編碼、存取事件資料欄位、辨識門檻定義。完成效益基線量測（出勤紀錄正確率、單次藥品存取時間）。完成臉部特徵資料使用同意程序。長料件與致動器完成選型下單。</td><td class="num">15%</td></tr>
+        <tr><td class="num">CP2-1</td><td>WP2 智慧型抽屜 payload</td><td class="num">W5</td><td>抽屜結構設計圖一份。規格：payload 整體最大尺寸 60×60×110 cm；最大單格藥盒尺寸 11×11×10 cm；單層抽屜可儲存 9 格藥盒。單層試作件完成致動可靠度初驗。</td><td class="num">30%</td></tr>
+        <tr><td class="num">CP3-1</td><td>WP3 人員身分辨識與出勤紀錄</td><td class="num">W7</td><td>可實際操作之軟體一套。規格：人員身分辨識誤認率 ≤ 1%、誤拒率 ≤ 10%；出勤狀態選定與紀錄寫入完整；出勤紀錄正確率 ≥ 95%（人員與狀態均正確）。</td><td class="num">45%</td></tr>
+        <tr><td class="num">CP2-2</td><td>WP2 智慧型抽屜 payload<br><span style="font-family:var(--mono);font-size:11px;color:var(--graphite)">併期中進度查核</span></td><td class="num">W8</td><td>payload 原型硬體一組。規格：具備五層抽屜結構；每層抽屜具自動開合功能；每格藥盒具獨立上蓋且可自動開閉；全格位開啟指令與實際開啟格位比對正確率 100%。併同提出期中進度報告一份，含可供實地查驗之硬體與軟體工作項目佐證資料。</td><td class="num">60%</td></tr>
+        <tr><td class="num">CP4-1</td><td>WP4 病患身分辨識與存取紀錄</td><td class="num">W12</td><td>可實際操作之軟體一套。規格：病患身分辨識誤認率 ≤ 0.5%、誤拒率 ≤ 10%；辨識未通過時一律轉人工確認且不自動開盒；存取事件紀錄欄位完整率 ≥ 99.5%，並可依人員、病患與期間查詢。</td><td class="num">80%</td></tr>
+        <tr><td class="num">CP5-1</td><td>WP5 系統整合測試</td><td class="num">W14</td><td>系統整合測試報告一份，含下列測試結果：身分辨識指令傳遞、抽屜與藥盒開啟邏輯、存取紀錄正確性、辨識失敗時之人工備援流程、連續作業穩定性。</td><td class="num">90%</td></tr>
+        <tr><td class="num">CP6-1</td><td>WP6 教育訓練與成果報告</td><td class="num">W16</td><td>受輔導業者人才教育訓練：實際上課相片、SOP 文件一份、教育訓練簽到表一式。執行成果報告一份，含本計畫相關執行工作之佐證資料。</td><td class="num">100%</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p style="font-size:13.5px;color:var(--graphite)">說明：查核點依工作項目編號，同一工作項目之查核點以連號區分。系統整合測試排序於各模組完成之後，以確保測試對象已具備。辨識規格以誤認率與誤拒率表達，理由詳見（三）之 3 與 4。</p>
+  </section>
+
+  <section id="s5">
+    <h2><span class="sec">（五）</span>預期計畫效益</h2>
+
+    <h3>1、量化效益</h3>
+    <div class="scroller">
+    <table class="tbl">
+      <thead><tr><th>項目</th><th>現況</th><th>計畫目標</th><th>量測方式</th></tr></thead>
+      <tbody>
+        <tr><td>出勤紀錄正確率</td><td>依計畫初期實測基線</td><td>≥ 95%（人員與狀態均正確）</td><td>與人工比對之抽樣稽核</td></tr>
+        <tr><td>單次藥品存取時間</td><td>20–30 秒</td><td>≤ 10 秒</td><td>自身分辨識啟動至藥盒關閉，同批人員導入前後比對</td></tr>
+        <tr><td>人員身分辨識誤認率</td><td>不適用</td><td>≤ 1%</td><td>註冊人員之交叉比對測試</td></tr>
+        <tr><td>病患身分辨識誤認率</td><td>不適用</td><td>≤ 0.5%</td><td>刻意構造之錯誤對象比對測試</td></tr>
+        <tr><td>藥盒開啟對應正確率</td><td>不適用</td><td>100%</td><td>全格位逐一驗證，指令與實際開啟格位比對</td></tr>
+        <tr><td>存取事件紀錄完整率</td><td>依人工登載</td><td>≥ 99.5%</td><td>整合測試期間之事件比對</td></tr>
+        <tr><td>藥盒獨立控制格數</td><td>不適用</td><td>45 格（五層 × 九宮格）</td><td>功能驗證</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <h3>2、質化效益</h3>
+    <ul>
+      <li>提升自主導航智慧藥櫃於醫療與長照場域之實際可用性，使設備由單純移動平台升級為具備身分辨識與存取控管能力之智慧照護輔助系統。</li>
+      <li>透過人臉辨識與智慧抽屜設計，強化人員管理與藥品配送流程之安全性與可靠性，降低人為操作錯誤風險。</li>
+      <li>採用模組化 payload 架構，提升設備後續功能擴充與場域調整之彈性，降低導入與維護成本。</li>
+      <li>建立可回溯之存取紀錄鏈，使給藥爭議或流程異常發生時具備客觀查證依據，提升機構管理可靠性。</li>
+      <li>抽屜 payload 之模組化介面可承載其他功能模組，為受輔導業者後續拓展至耗材配送、檢體運送等應用預留基礎。</li>
+      <li>可安排現場示範觀摩並協助成果展示，供其他業者參考仿效，提升設備市場競爭力。</li>
+    </ul>
+  </section>
+
+  </main>
+</div>
+
+<div class="wrap">
+  <footer>
+    <span>自主導航智慧藥櫃開發計畫 · 輔導計畫書 v0.2</span>
+    <span>本版已刪除非接觸量測、手勢辨識與語音記錄 · 十六週</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var far=document.getElementById('far'),np=document.getElementById('np');
+  var oFar=document.getElementById('oFar'),oNp=document.getElementById('oNp');
+  var vDay=document.getElementById('vDay'),vMon=document.getElementById('vMon'),vReq=document.getElementById('vReq');
+  var curve=document.getElementById('curve'),vline=document.getElementById('vline'),dot=document.getElementById('dot');
+
+  var PX0=52,PX1=692,BASE=190,TOP=24;
+  var L0=-4, L1=-1;
+
+  function sx(l){return PX0+(l-L0)/(L1-L0)*(PX1-PX0);}
+  function sy(pr){return BASE-pr*(BASE-TOP);}
+
+  function fmtPct(v){
+    if(v>=10) return v.toFixed(1)+'%';
+    if(v>=1) return v.toFixed(2)+'%';
+    if(v>=0.01) return v.toFixed(3)+'%';
+    return v.toFixed(4)+'%';
+  }
+
+  function update(){
+    var l=parseFloat(far.value), n=parseInt(np.value,10);
+    var q=Math.pow(10,l);
+    oFar.textContent=fmtPct(q*100);
+    oNp.textContent=n;
+
+    var d='',N=160;
+    for(var i=0;i<=N;i++){
+      var li=L0+(L1-L0)*i/N;
+      var qi=Math.pow(10,li);
+      var pr=1-Math.pow(1-qi,n);
+      d+=(i?'L':'M')+sx(li).toFixed(1)+' '+sy(pr).toFixed(1);
+    }
+    d+='L'+PX1+' '+BASE+'L'+PX0+' '+BASE+'Z';
+    curve.setAttribute('d',d);
+
+    var day=1-Math.pow(1-q,n);
+    var x=sx(l), y=sy(day);
+    vline.setAttribute('x1',x); vline.setAttribute('x2',x);
+    dot.setAttribute('cx',x); dot.setAttribute('cy',y);
+
+    vDay.textContent=(day*100).toFixed(day*100>=10?0:1)+'%';
+    var mon=30*n*q;
+    vMon.textContent=mon>=10?mon.toFixed(0)+' 次':mon.toFixed(1)+' 次';
+    vReq.textContent=fmtPct(100/(30*n));
+  }
+  far.addEventListener('input',update);
+  np.addEventListener('input',update);
+  update();
+})();
+</script>
+</body>
+</html>
