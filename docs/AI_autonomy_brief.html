@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI機器人及自主系統智造整合應用技術｜簡報</title>
+
+<!--
+╔══════════════════════════════════════════════════════════════════╗
+  分頁式可編輯 HTML 簡報
+  ─────────────────────────────────────────────────────────────────
+  【檔案結構】
+   1. <style>  設計變數（:root）→ 舞台/頁面 → 共用元件 → 工具列 → 列印
+   2. <main id="deck">  每一頁 = 一個 <section class="slide">
+        · data-title   ：頁面名稱（出現在工具列的頁面選單）
+        · data-section ：頁尾左側的章節標籤
+   3. <nav id="toolbar"> 工具列（上一頁/下一頁/選單/編輯/存檔/列印）
+   4. <script> 換頁、縮放、編輯與存檔邏輯
+
+  【操作方式】
+   ← → / PageUp PageDown / 空白鍵：換頁    Home / End：首頁/末頁
+   E：切換編輯模式    Ctrl+S：存成新的 HTML 檔    P：列印/輸出 PDF
+   編輯模式下可直接點文字修改，並可「複製本頁」「刪除本頁」。
+
+  【常用元件 class】
+   .grid-2 / .grid-3      兩欄/三欄排版
+   .card                  白底卡片（內含 h4 標題、p、ul）
+   .call / .call.green / .call.warn   重點提示框（藍/綠/橘）
+   table.tbl              表格；.tbl.sm 為較小字級
+   .kpi > .num + .lbl     大數字指標
+   .flow                  流程箭頭列
+   .pill                  標籤
+╚══════════════════════════════════════════════════════════════════╝
+-->
+
+<style>
+/* ============================================================
+   1. 設計變數：改這裡即可調整整份簡報的配色與字型
+   ============================================================ */
+:root{
+  --navy:#17375d;      /* 主色（深藍）     */
+  --blue:#2968a5;      /* 輔色（藍）       */
+  --accent:#3171bb;    /* 強調色           */
+  --ink:#27364a;       /* 內文文字         */
+  --muted:#68788b;     /* 次要文字         */
+  --line:#dbe3eb;      /* 邊框             */
+  --bg:#f5f7fa;        /* 頁面底色         */
+  --card:#ffffff;      /* 卡片底色         */
+  --th:#e8f0f8;        /* 表頭底色         */
+  --green:#178575; --green-bg:#e9f6f2;
+  --warn:#b87824;  --warn-bg:#fff6e6;
+  --info-bg:#eaf2fb;
+  --font:"Noto Sans TC","Microsoft JhengHei","PingFang TC",sans-serif;
+  --slide-w:1280px; --slide-h:720px;   /* 16:9 版面尺寸 */
+}
+
+/* ============================================================
+   2. 舞台與頁面
+   ============================================================ */
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#1d2633;font-family:var(--font);color:var(--ink)}
+#deck{position:fixed;inset:0 0 52px 0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#stage{width:var(--slide-w);height:var(--slide-h);position:relative;transform-origin:center center;flex:none}
+
+.slide{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  background:var(--bg);padding:40px 60px 46px;overflow:hidden;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);line-height:1.6;font-size:17px;
+}
+.slide.active{display:flex}
+
+/* 頁首：小標 + 標題 */
+.slide-head{margin-bottom:16px;flex:none}
+.kicker{font-size:13px;letter-spacing:.14em;color:var(--blue);font-weight:700}
+.slide h2{margin:4px 0 0;font-size:30px;color:var(--navy);border-left:6px solid var(--accent);padding-left:14px;line-height:1.3}
+.slide-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
+
+/* 頁尾（章節與頁碼由 JS 自動填入 data-page，不需手動維護） */
+.slide::after{
+  content:attr(data-section) "　｜　" attr(data-page);
+  position:absolute;left:60px;right:60px;bottom:14px;
+  font-size:12px;color:#8a99ab;border-top:1px solid var(--line);padding-top:6px;text-align:right;
+}
+
+/* 封面頁 / 章節頁 */
+.slide.cover{background:linear-gradient(115deg,var(--navy),var(--blue));color:#fff;justify-content:center;padding:70px 90px}
+.slide.cover::after{color:#b9cce3;border-color:rgba(255,255,255,.25)}
+.cover .eyebrow{font-size:15px;letter-spacing:.2em;opacity:.85}
+.cover h1{font-size:56px;line-height:1.25;margin:18px 0}
+.cover p{font-size:21px;max-width:960px;opacity:.95}
+.cover .pill{background:rgba(255,255,255,.16);color:#fff;font-size:15px;padding:6px 16px}
+.slide.divider{background:var(--navy);color:#fff;justify-content:center;padding:70px 90px}
+.slide.divider::after{color:#9fb6d2;border-color:rgba(255,255,255,.2)}
+.divider .big{font-size:110px;font-weight:800;opacity:.18;line-height:1}
+.divider h2{color:#fff;border:0;padding:0;font-size:46px}
+.divider p{font-size:20px;opacity:.9;max-width:900px}
+
+/* ============================================================
+   3. 共用元件
+   ============================================================ */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.card h4{margin:0 0 6px;font-size:18px;color:#235680}
+.card p{margin:4px 0}
+.card ul{margin:4px 0;padding-left:20px}
+.card li{margin:2px 0}
+.small{font-size:14.5px}
+.muted{color:var(--muted);font-size:13px}
+.lead{font-size:19px;margin:0}
+
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+.kpi .num{font-size:36px;font-weight:800;color:#235fa5;line-height:1.2}
+.kpi .lbl{color:var(--muted);font-size:14px}
+
+.call{background:var(--info-bg);border-left:5px solid var(--accent);padding:12px 16px;border-radius:8px}
+.call.green{background:var(--green-bg);border-color:var(--green)}
+.call.warn{background:var(--warn-bg);border-color:var(--warn)}
+
+.pill{display:inline-block;background:#e8f0fa;color:#245c9b;border-radius:30px;padding:3px 12px;font-size:13px;font-weight:700;margin-right:6px}
+
+table.tbl{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:15px}
+table.tbl th,table.tbl td{padding:8px 12px;text-align:left;vertical-align:top;border-bottom:1px solid #e7edf3}
+table.tbl th{background:var(--th);color:#234d79;font-weight:700}
+table.tbl tr:last-child td{border-bottom:0}
+table.tbl.sm{font-size:13.5px}
+table.tbl.sm th,table.tbl.sm td{padding:6px 10px}
+td.tag{font-weight:700;color:#235680;white-space:nowrap}
+/* .roadmap：技術藍圖表的合併儲存格（大計畫／分項） */
+table.tbl.roadmap td.grp{vertical-align:middle;background:#f2f6fb;color:#1f4a75;border-right:1px solid #e7edf3}
+table.tbl.roadmap td.plan{background:var(--navy);color:#fff;font-weight:700;text-align:center}
+table.tbl.roadmap td.tag{white-space:normal}
+/* .hl-last：強調表格最後一欄（例如解決方案欄） */
+table.tbl.hl-last td:last-child{background:var(--green-bg)}
+table.tbl.hl-last th:last-child{background:#d3ece4;color:#11665a}
+
+.flow{display:flex;gap:8px;align-items:stretch}
+.flow > div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.flow > span{align-self:center;color:#8296ab;font-size:22px}
+.flow b{color:var(--accent);font-size:20px}
+
+.method{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;font-size:16px}
+.method dt{font-weight:700;color:#235680}
+.method dd{margin:0}
+
+.sources li{margin:4px 0;font-size:15px}
+a{color:#2462a6}
+
+/* ============================================================
+   4. 工具列與編輯模式
+   ============================================================ */
+#toolbar{position:fixed;left:0;right:0;bottom:0;height:52px;background:#111821;display:flex;align-items:center;gap:8px;padding:0 14px;color:#cfd8e3;font-size:14px;z-index:10}
+#toolbar button,#toolbar select{background:#26323f;color:#e6edf5;border:1px solid #3a4a5c;border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+#toolbar button:hover{background:#334457}
+#toolbar .spacer{flex:1}
+#toolbar .on{background:#b87824;border-color:#d99a45}
+#toolbar .edit-only{display:none}
+body.editing #toolbar .edit-only{display:inline-block}
+#counter{min-width:64px;text-align:center}
+body.editing .slide.active{outline:3px dashed #d99a45;outline-offset:-3px}
+body.editing [contenteditable]:focus{outline:none}
+body.editing .slide *:hover{box-shadow:inset 0 0 0 1px rgba(184,120,36,.35)}
+
+/* ============================================================
+   5. 列印 / 輸出 PDF：每頁一張 16:9
+   ============================================================ */
+@page{size:1280px 720px;margin:0}
+@media print{
+  html,body{background:#fff;height:auto}
+  #toolbar{display:none}
+  #deck{position:static;display:block}
+  #stage{transform:none!important;width:auto;height:auto}
+  .slide{display:flex!important;position:relative;width:1280px;height:720px;box-shadow:none;break-after:page;outline:none!important}
+}
+</style>
+</head>
+
+<body class="">
+<main id="deck"><div id="stage">
+
+<!-- ================================================================
+     第 1 頁｜封面
+     ================================================================ -->
+<section class="slide cover" data-title="封面" data-section="內部提案討論稿 2026-10-20">
+  <div class="eyebrow">FOUR-YEAR RESEARCH PROGRAM · 2026 DRAFT</div>
+  <h1>AI機器人及自主系統<br>智造整合應用技術</h1>
+  <p>以工業自主技能、AI 技能可信驗證與足形服務型機器人性能檢測為核心，回應少量多樣製造、接觸式組裝、主動檢測及新型機器人產品評估需求。</p>
+  <div style="margin-top:22px">
+    <span class="pill">A｜自主技能</span><span class="pill">B｜可信驗證</span><span class="pill">C｜性能檢測</span><span class="pill">4 年 · 6 子項</span>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 2 頁｜簡報大綱
+     ================================================================ -->
+<section class="slide" data-title="簡報大綱" data-section="大綱">
+  <div class="slide-head"><div class="kicker">OUTLINE</div><h2>簡報大綱</h2></div>
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card"><h4>一｜產業趨勢與需求分析</h4><p class="small">產業現況、意見領袖觀察、關鍵製造挑戰、需求缺口</p></div>
+      <div class="card"><h4>二｜核心定位與技術藍圖</h4><p class="small">計畫目標、應用情境與標的選擇、全程技術藍圖</p></div>
+      <div class="card"><h4>三｜A 分項：AI 機器人自主技能</h4><p class="small">A1 技能鏈規劃、A2 操作技能、A3 瑕疵檢測與取像</p></div>
+      <div class="card"><h4>四｜B 分項：AI 技能可信驗證</h4><p class="small">B1 虛實差異建模、B2 失效情境與可信邊界</p></div>
+      <div class="card"><h4>五｜C 分項：足形機器人性能檢測</h4><p class="small">C1 依 ISO 18646-5 建立移動性能測試方法</p></div>
+      <div class="card"><h4>六｜年度情境規劃</h4><p class="small">驗證內容規劃</p></div>
+    </div>
+    <div class="call green"><b>價值主張：</b>以可重用工業技能與可量測驗證證據，縮短機器人從「學會新任務」到「可靠進入工廠」的工程週期；以標準化性能檢測能力支援新型機器人產業發展。</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 3 頁｜章節：產業趨勢
+     ================================================================ -->
+<section class="slide divider" data-title="章節｜一 產業趨勢" data-section="一｜產業趨勢與需求分析">
+  <div class="big">01</div>
+  <h2>產業趨勢與需求分析</h2>
+  <p>製造業下一階段的需求，不只是增加設備，而是讓機器人以較低工程成本處理更高變異的工作，並具備可驗證的生產品質。</p>
+</section>
+
+<!-- ================================================================
+     第 4 頁｜產業現況：全球需求規模
+     ================================================================ -->
+<section class="slide" data-title="全球需求規模與成長" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">1. 產業現況與趨勢</div><h2>全球需求規模：機器人安裝持續成長</h2></div>
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="kpi"><div class="num">54.2 萬台</div><div class="lbl">2024 全球工業機器人新增安裝｜IFR [S2]</div></div>
+      <div class="kpi"><div class="num">466.4 萬台</div><div class="lbl">2024 全球運行中工業機器人｜IFR [S2]</div></div>
+      <div class="kpi"><div class="num">1,200 億美元</div><div class="lbl">2030 全球工業機器人市場預估｜工研院產科國際所 [S1]</div></div>
+    </div>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:24%">市場證據</th><th style="width:34%">數據／趨勢</th><th>與本計畫的關聯</th></tr>
+      <tr><td>2024 全球新增安裝</td><td>約 54.2 萬台；亞洲占 74%</td><td>反映既有機器人本體與零組件供應基礎</td></tr>
+      <tr><td>2024 全球在役</td><td>約 466.4 萬台</td><td>除了新機，也有維修、替換及模組升級需求，但規模需另估</td></tr>
+      <tr><td>2028 新增安裝預測</td><td>約 70.8 萬台（IFR 2025 年預測）</td><td>供應鏈具持續成長機會；不等同零組件營收預測</td></tr>
+      <tr><td>2024 主要需求產業</td><td>電子／電機約 24%、汽車約 23%、金屬與機械約 16%</td><td>與精密機械、電子製造均有關聯，可作跨產業供應鏈切入依據</td></tr>
+    </tbody></table>
+    <p class="muted">資料：IFR《World Robotics 2025》官方摘要及發布簡報。2025 年預測屬當時預測，非 2028 實績。</p>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 5 頁｜製造模式變化
+     ================================================================ -->
+<section class="slide" data-title="製造模式變化" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">1. 產業現況與趨勢</div><h2>製造模式變化：從專用自動化走向多規格共線，帶動機器人應用需求</h2></div>
+  <div class="slide-body">
+    <p class="lead">高產量、長期固定的工序，專用機與固定式自動化通常具成本及節拍優勢；但在新產品導入、產品族群多樣化，工程師須反覆處理流程、示教、治具與檢測條件，拖慢了終端應用的導入。</p>
+    <div class="grid-2">
+      <div class="card"><h4>固定量產型工序</h4><p>優先考慮成熟專機、固定控制與標準量測。</p><p class="small"><b>主要指標：</b>節拍、良率、單件成本</p></div>
+      <div class="card"><h4>多品項工序</h4><p>優先評估有限示教、換型工時降低。</p><p class="small"><b>主要指標：</b>同時符合品質與可靠度門檻</p></div></div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 6 頁｜產業意見領袖觀察
+     ================================================================ -->
+<section class="slide" data-title="產業意見領袖觀察" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">1. 產業現況與趨勢</div><h2>產業意見領袖的公開觀察</h2></div>
+  <div class="slide-body small">
+    <div class="grid-3">
+      <div class="card"><h4>① 絲國一｜TAIROA 理事長</h4><p>台灣零組件有優勢，面對國際競爭須發展應用創新與差異化。[S3]</p><p><b>連結：</b>A 分項以可重用組裝與檢測技能創造系統應用價值。</p></div>
+      <div class="card"><h4>② 黃識忠｜達明營運長</h4><p>結構性缺工、AI 視覺判斷與即時決策、產線快速複製與部署的重要性。[S4]</p><p><b>連結：</b>A1 任務規劃、A2 操作技能、A3 檢測技能直接回應。</p></div>
+      <div class="card"><h4>③ 黃識忠｜達明營運長</h4><p>焊接、鎖螺絲、品檢、搬運等產線應用比表演型展示更具實際價值。[S5]</p><p><b>連結：</b>年度 Demo 以換型工時、品質與可靠度驗證。</p></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><h4>④ 胡竹生｜工研院副院長</h4><p>AI 可推動既有機器人從重複性工作走向具推理能力的應用。[S6]</p><p><b>連結：</b>支持技能鏈規劃與學習式操作的研發方向。</p></div>
+      <div class="card"><h4>⑤ TAIROA 國際標準研討會</h4><p>機器人國際市場拓展須關注標準、合規與第三方驗證。[S7]</p><p><b>連結：</b>支持 B 的驗證方法研發及 C 的檢測能力先行建置。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 7 頁｜關鍵製造挑戰（①–③）
+     ================================================================ -->
+<section class="slide" data-title="關鍵製造挑戰 ①–③" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">2. 關鍵製造挑戰（1/2）</div><h2>以機械零組件為代表的製造挑戰</h2></div>
+  <div class="slide-body">
+    
+    <div class="grid-3">
+      <div class="card"><h4>① 從加工件升級為功能模組</h4><ul>
+        <li>齒輪、軸承、殼體、傳動元件須整合為減速機或關節模組</li>
+        <li>品質責任從單件尺寸延伸至組裝配合、性能與可追溯性</li>
+        <li>需建立可複用的組裝工序與一致的品質確認方法</li></ul></div>
+      <div class="card"><h4>② 多規格造成換型成本</h4><ul>
+        <li>扭矩等級、尺寸、殼體孔位與零件配置改變操作順序及參數</li>
+        <li>人工教點、治具更換及程式調整限制小批量經濟性</li>
+        <li>比較新型號導入工時、換型停機及技能重用率</li></ul></div>
+      <div class="card"><h4>③ 精密對位與接觸式組裝</h4><ul>
+        <li>定位銷、減速機子模組與接頭涉及 Align、Insert、Fit Verify</li>
+        <li>公差、姿態、摩擦與接觸卡滯增加操作調適需求</li>
+        <li>以成功率、節拍、接觸力與重工率評估導入效益</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 8 頁｜關鍵製造挑戰（④–⑥）
+     ================================================================ -->
+<section class="slide" data-title="關鍵製造挑戰 ④–⑥" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">2. 關鍵製造挑戰（2/2）</div><h2>高精度協同、複雜表面檢測與學習式技能可靠度</h2></div>
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card"><h4>④ 高精度工序與專用設備協同</h4><ul>
+        <li>軸承壓裝、預壓、精密鎖附及減速機內部調校可能更適合專機</li>
+        <li>機器人需自主協調取放、對位、設備交握與完成確認</li>
+        <li>以整線節拍、設備利用率及總成本驗證，不假設全由手臂完成</li></ul></div>
+      <div class="card"><h4>⑤ 殼體與加工表面品質檢測</h4><ul>
+        <li>鋁合金殼體孔口、曲面、反光及遮蔽影響瑕疵檢出</li>
+        <li>固定取像可能造成視角不足、人工翻面或補拍</li>
+        <li>考量最小瑕疵尺寸、漏檢率、有效覆蓋率與取像節拍</li></ul></div>
+      <div class="card"><h4>⑥ 學習式技能量產部署可靠度</h4><ul>
+        <li>模擬成功不代表實體接觸組裝在不同批次仍穩定</li>
+        <li>新版本技能可能在未測試的公差或摩擦條件下失敗</li>
+        <li>需虛實差異建模、失效情境探索及可追溯的能力邊界</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 9 頁｜需求缺口
+     ================================================================ -->
+<section class="slide" data-title="需求缺口" data-section="一｜產業趨勢與需求分析">
+  <div class="slide-head"><div class="kicker">3. 需求缺口</div><h2>三類技術需求缺口：Skill／Trust／Testing Gap</h2></div>
+  <div class="slide-body">
+    <table class="tbl">
+      <tbody><tr><th style="width:14%">缺口</th><th style="width:38%">產業問題</th><th style="width:34%">技術需求</th><th>對應分項</th></tr>
+      <tr><td class="tag">Skill Gap</td><td>新任務重新編程、接觸操作難以調適、固定取像無法兼顧複雜工件品質</td><td>技能鏈規劃、技能建構與重用、瑕疵檢測與 NBV</td><td><span class="pill">A1／A2／A3</span></td></tr>
+      <tr><td class="tag">Trust Gap</td><td>模擬成功未必代表實體成功；缺乏失效條件與可靠度依據</td><td>虛實差異建模、失效搜尋、可信操作邊界</td><td><span class="pill">B1／B2</span></td></tr>
+      <tr><td class="tag">Testing Gap</td><td>足形新型產品需要可比較、可重複的性能評估</td><td>標準化移動／穩定性能量測</td><td><span class="pill">C1</span></td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 10 頁｜章節：核心定位
+     ================================================================ -->
+<section class="slide divider" data-title="章節｜二 核心定位與藍圖" data-section="二｜核心定位與技術規劃">
+  <div class="big">02</div>
+  <h2>新期程計畫核心定位與技術規劃</h2>
+  <p>推動機器人產業由傳統自動化邁向 AI 自主化。</p>
+</section>
+
+<!-- ================================================================
+     第 11 頁｜計畫定位與目標
+     ================================================================ -->
+<section class="slide" data-title="計畫定位與目標" data-section="二｜核心定位與技術規劃">
+  <div class="slide-head"><div class="kicker">1. 計畫定位與目標</div><h2>產業化目標：由傳統自動化邁向 AI 自主化</h2></div>
+  <div class="slide-body">
+    <div class="grid-2">
+      <div class="card"><h4>面臨的挑戰</h4><p class="small">製造業朝少量多樣、彈性生產及複雜作業發展；傳統機器人高度依賴人工編程、示教與系統調適，造成新任務導入成本高、技能重用性不足及環境適應能力有限。</p></div>
+      <div class="card"><h4>聚焦三大缺口</h4><p class="small"><b>Skill Gap</b>（技能自主化缺口）、&nbsp;<b>Trust Gap</b>（技能可信任缺口）與<b>Testing Gap</b>（標準檢測缺口），建立從任務理解、技能取得、執行調適至可靠度評估的完整自主化技術體系。</p></div>
+      <div class="card"><h4>關鍵技術</h4><ul class="small"><li>任務自主規劃</li><li>工業操作技能學習與重用</li><li>瑕疵檢測與自主取像</li><li>AI 技能可信驗證</li></ul></div>
+      <div class="card"><h4>驗證情境與延伸</h4><p class="small">以機器人關鍵模組之組裝與檢測為代表情境，驗證多規格換型、接觸式操作及複雜檢測條件下的適用性；同時因應足型機器人發展，先行建立標準化性能檢測能力。</p></div>
+    </div>
+    <div class="call green"><b>計畫核心：</b>建立從新任務理解、操作技能建構與重用、自主瑕疵檢測，到技能可信驗證的技術體系，降低工業機器人新任務導入、調適與驗證成本；同步建置足形服務型機器人性能測試方法。</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 12 頁｜傳產轉型機器人供應鏈 × AI 自主技術（原 12、13 頁整合）
+     ================================================================ -->
+<section class="slide" data-title="傳產轉型與 AI 自主技術" data-section="二｜核心定位與技術規劃">
+  <div class="slide-head"><div class="kicker">2. 整體應用情境與標的</div><h2>傳產業者轉型機器人高科技供應鏈：以 AI 自主技術突破轉型瓶頸</h2></div>
+  <div class="slide-body">
+    <!-- 轉型路徑：既有能力 → 機器人關節模組 → AI 自主技術支援 -->
+    <div class="flow small">
+      <div><b>既有基礎</b><br>齒輪、軸承、傳動元件、金屬加工、機電控制、設備整合</div><span>→</span>
+      <div><b>轉型目標</b><br>由加工件走向減速機、關節驅動等<br>高附加價值功能模組</div><span>→</span>
+      <div><b>轉型瓶頸</b><br>多規格組裝、精密對位、表面檢測、<br>品質一致與追溯</div><span>→</span>
+      <div><b>本計畫解方</b><br>AI 機器人自主技能＋<br>技能可信驗證</div>
+    </div>
+    <!-- 轉型問題與技術對應表 -->
+    <table class="tbl sm hl-last">
+      <tbody><tr><th style="width:17%">既有產業能力</th><th style="width:19%">機器人供應鏈升級機會</th><th style="width:31%">轉型過程面臨的問題</th><th>AI 機器人自主技術如何協助</th></tr>
+      <tr><td>齒輪／精密傳動加工</td><td>精密減速機零件與傳動子模組</td><td>由單件尺寸精度轉為組件供應，需具備裝配配合、精度與性能確認能力</td><td>&nbsp;Align／Adaptive Insert 接觸式組裝技能</td></tr>
+      <tr><td>軸承／精密機構件</td><td>關節軸系、殼體與支撐結構</td><td>鋁合金殼體曲面、孔口與反光表面瑕疵難以穩定檢出；壓裝／預壓須與專機協同</td><td>瑕疵辨識＋自主取像與補測</td></tr>
+      <tr><td>馬達／控制與機電整合</td><td>關節驅動與回授整合模組</td><td>多工序組裝與接頭安裝，須確保同軸度、裝配一致性及資料可追溯</td><td>&nbsp;Fit Verify 組裝完成判定</td></tr>
+      <tr><td>自動化設備與系統整合</td><td>關鍵模組彈性生產工作站</td><td>產品規格多、迭代快，每次換型需重新教點、調整治具與重新驗證</td><td>依規格自主規劃技能鏈；跨零件／跨產品技能重用，降低示教量與導入工時</td></tr>
+    </tbody></table>
+    <div class="call green"><b>應用情境定位：</b>傳統精密機械零組件業者正積極切入機器人高科技供應鏈，但轉型伴隨大量彈性生產、精密組裝與品質檢測需求。本計畫以機器人關鍵模組為落地標的，透過 AI 機器人自主技術降低新任務導入、換型與驗證成本，協助業者跨越「會加工」到「能穩定量產功能模組」的門檻。</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 13 頁｜標的比較與選擇
+     ================================================================ -->
+<section class="slide" data-title="標的比較與選擇" data-section="二｜核心定位與技術規劃">
+  <div class="slide-head"><div class="kicker">2. 整體應用情境與標的</div><h2>標的選擇：關節模組</h2></div>
+  <div class="slide-body">
+    <table class="tbl sm">
+      <tbody><tr><th style="width:15%">候選標的</th><th style="width:28%">產業供應鏈價值</th><th style="width:30%">組裝特性與風險</th><th>建議定位</th></tr>
+      <tr><td>精密減速機</td><td>傳動關鍵零組件，連結國內齒輪及精密加工能力</td><td>內部齒輪配合、軸承預壓、潤滑與精度調校專業性高，部分適合專機</td><td>重要產業升級標的；不以完整內部組裝作為主要自主技能 Demo</td></tr>
+      <tr><td><b>模組化機器人關節單元</b></td><td>整合減速機、馬達、編碼器、殼體，連結零件加工到功能模組供應</td><td>兼具多零件對位、插裝、檢查與規格變化；可與專用設備分工</td><td><b>主要落地標的</b></td></tr>
+    </tbody></table>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:30%">產品／製造需求</th><th style="width:32%">待突破的工序問題</th><th>產業效益驗證方式</th></tr>
+      <tr><td>不同扭矩、尺寸與殼體配置的關節產品家族</td><td>工序、位姿與夾治具參數需隨規格調整</td><td>新型號導入工時、換型時間與技能重用率</td></tr>
+      <tr><td>減速機子模組置入、定位銷／接頭安裝</td><td>接觸式對位、插入卡滯、組裝完成判定</td><td>人工 vs. 自動化之良率、節拍、重工及接觸力</td></tr>
+      <tr><td>鋁合金關節殼體及精密加工表面</td><td>曲面、孔口、反光造成取像條件變動</td><td>固定取像 vs. 自主取像之有效覆蓋率、漏檢率及檢測時間</td></tr>
+      <tr><td>新零件導入與模組版本迭代</td><td>重新示教與驗證成本增加</td><td>技能重用後的示教量、工程工時及測試成本</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 14 頁｜整合應用情境
+     ================================================================ -->
+<section class="slide" data-title="整合應用情境" data-section="二｜核心定位與技術規劃">
+  <div class="slide-head"><div class="kicker">2. 整體應用情境與標的</div><h2>整合應用情境：一個產品＋組裝／檢測應用技能</h2></div>
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card"><h4>主產品</h4><p class="small">模組化機器人關節單元（以單一產品家族的不同尺寸／規格為測試範圍）</p></div>
+      <div class="card"><h4>組裝模組</h4><p class="small">殼體定位、減速機子模組置入、定位銷或接頭插裝、Fit Verify</p></div>
+      <div class="card"><h4>檢測模組</h4><p class="small">關節殼體金屬表面瑕疵、CAD 引導取像、NBV 主動補測</p></div>
+    </div>
+    <div class="flow">
+      <div><b>A1</b><br>依關節規格規劃工序</div><span>→</span>
+      <div><b>A2</b><br>Align / Adaptive Insert / Fit Verify</div><span>→</span>
+      <div><b>A3</b><br>瑕疵辨識 / 自主取像</div><span>→</span>
+      <div><b>成果</b><br>模組品質確認與分流</div>
+    </div>
+    <div class="call"><b>B 分項貫穿：</b>部署前同時針對 A2 組裝操作與 A3 瑕疵檢測／自主取像，進行虛實差異、失效情境探索及可信邊界評估。</div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 15 頁｜全程技術藍圖
+     ================================================================ -->
+<section class="slide" data-title="全程技術藍圖" data-section="二｜核心定位與技術規劃">
+  <div class="slide-head"><div class="kicker">3. 全程技術藍圖／計畫架構</div><h2>四年技術藍圖：6 個子項 × 4 年度</h2></div>
+  <div class="slide-body">
+    <table class="tbl roadmap">
+      <!-- 欄位：大計畫｜分項｜子項｜Y1–Y4；大計畫與分項以 rowspan 合併儲存格 -->
+      <tbody><tr><th style="width:10%">大計畫</th><th style="width:13%">分項</th><th style="width:13%">子項</th><th>Y1</th><th>Y2</th><th>Y3</th><th>Y4</th></tr>
+      <tr><td class="grp plan" rowspan="6">AI機器人及自主系統智造整合應用技術</td>
+          <td class="grp" rowspan="3"><b>A 分項</b><br>機器人自主規劃與工業領域技能技術</td>
+          <td class="tag">A1 技能鏈自主規劃</td><td>任務語意與技能描述建模</td><td>多限制條件技能鏈自主規劃</td><td>執行回饋與技能鏈增量規劃</td><td>可信邊界導向閉環技能鏈規劃</td></tr>
+      <tr><td class="tag">A2 操作技能建構與重用</td><td>基礎操作技能參數化建構</td><td>接觸式組裝技能學習</td><td>跨零件操作技能調適與重用</td><td>跨產品操作技能遷移與快速部署</td></tr>
+      <tr><td class="tag">A3 瑕疵檢測與自主取像</td><td>瑕疵辨識與 CAD 引導取像</td><td>感測品質約束取像路徑最佳化</td><td>不確定性驅動 NBV 主動取像</td><td>跨工件自主補測與檢測技能重用</td></tr>
+      <tr><td class="grp" rowspan="2"><b>B 分項</b><br>機器人跨技能可信驗證與評估技術</td>
+          <td class="tag">B1 跨技能虛實差異</td><td>跨技能虛實行為與取像品質對應</td><td>操作接觸與感測品質參數辨識</td><td>多類型技能虛實差異校正</td><td>跨技能模擬有效性評估</td></tr>
+      <tr><td class="tag">B2 失效情境與可信邊界</td><td>多類型技能測試情境參數化</td><td>跨技能邊界測試情境生成</td><td>失效導向主動測試情境搜尋</td><td>跨技能可信操作邊界評估</td></tr>
+      <tr><td class="grp"><b>C 分項</b><br>產業技術服務平台環境建構</td>
+          <td class="tag">C1 足形移動性能檢測</td><td>地形適應與通行穩定特性測試</td><td>動態擾動與階梯通行特性測試</td><td>空間適應與路徑控制特性測試</td><td>停止與動力移動特性測試</td></tr>
+    </tbody></table>
+    <p class="muted" style="margin:0"><br></p>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 16 頁｜章節：A 分項
+     ================================================================ -->
+<section class="slide divider" data-title="章節｜三 A分項" data-section="三｜A分項：AI機器人自主技能技術">
+  <div class="big">03</div>
+  <h2>A分項：AI機器人自主技能技術</h2>
+  <p>A1 建立閉環技能鏈規劃，A2 建立並重用操作技能，A3 以瑕疵辨識與 NBV 建立主動檢測技能；三項透過統一 Skill Interface 串接。</p>
+</section>
+
+<!-- ================================================================
+     第 17 頁｜A1 技能鏈自主規劃
+     ================================================================ -->
+<section class="slide" data-title="A1 技能鏈自主規劃" data-section="三｜A分項：AI機器人自主技能技術">
+  <div class="slide-head"><div class="kicker">A1</div><h2>具執行回饋之機器人技能鏈自主規劃技術</h2></div>
+  <div class="slide-body">
+    <div class="card"><dl class="method">
+      <dt>技術缺口</dt><dd>傳統 Recipe 與單純 LLM 流程生成，難同時處理工具、可達性、物件狀態與失敗回饋。</dd>
+      <dt>研究方法</dt><dd>LLM 任務解析＋結構化 Skill Preconditions/Effects＋限制式 TAMP＋執行狀態更新與增量重規劃。</dd>
+      <dt>差異化與驗證</dt><dd>與固定 Recipe、純 LLM 規劃比較：規劃成功率、限制違反率、規劃時間、異常後恢復率。</dd>
+    </dl></div>
+    <table class="tbl">
+      <tbody><tr><th style="width:8%">年度</th><th style="width:34%">技術項目</th><th style="width:26%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>任務語意與技能描述建模技術</td><td>技能語意、前置條件與效果</td><td>≥3 種任務目標；規劃成功率 ≥85%</td></tr>
+      <tr><td>Y2</td><td>多限制條件技能鏈自主規劃技術</td><td>幾何／工具／資源限制與可達性</td><td>≥3 類限制；規劃成功率 ≥90%</td></tr>
+      <tr><td>Y3</td><td>執行回饋與技能鏈增量規劃技術</td><td>執行狀態回饋與增量規劃</td><td>≥3 類異常；局部重規劃成功率 ≥80%</td></tr>
+      <tr><td>Y4</td><td>可信邊界導向閉環技能鏈規劃技術</td><td>可信邊界導向規劃與恢復</td><td>≥2 類產品模組；整體任務成功率 ≥90%</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 18 頁｜A2 操作技能建構與重用
+     ================================================================ -->
+<section class="slide" data-title="A2 操作技能建構與重用" data-section="三｜A分項：AI機器人自主技能技術">
+  <div class="slide-head"><div class="kicker">A2</div><h2>工業操作技能建構與跨任務重用技術</h2></div>
+  <div class="slide-body">
+    <div class="card"><dl class="method">
+      <dt>技術缺口</dt><dd>新零件導入依賴重新教點與參數調整；接觸式組裝對位置、公差及摩擦變異敏感。</dd>
+      <dt>研究方法</dt><dd>Y1–Y2 建立 Pick／Place／Align／Adaptive Insert（內含 Contact Locate）／Fit Verify，採參數化控制、示教 IL 與選擇性 RL 比較；Y3–Y4 發展少量資料跨零件、跨產品技能重用。</dd>
+      <dt>差異化與驗證</dt><dd>與重新教點、傳統順應控制、IL／Hybrid 方法比較：示教量、人工工時、插入成功率與跨產品重用率。</dd>
+    </dl></div>
+    <table class="tbl">
+      <tbody><tr><th style="width:8%">年度</th><th style="width:30%">技術項目</th><th style="width:28%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>基礎操作技能參數化建構技術</td><td>Pick／Place／Align 參數化與示教</td><td>≥3 種基礎技能；≥3 類零件；成功率 ≥90%</td></tr>
+      <tr><td>Y2</td><td>接觸式組裝技能學習技術</td><td>Adaptive Insert（含接觸搜尋）／Fit Verify，IL／RL 候選</td><td>累計 ≥5 種技能；插入成功率 ≥85%；比較 ≥2 種方法</td></tr>
+      <tr><td>Y3</td><td>跨零件操作技能調適與重用技術</td><td>跨零件參數調適與少量示教</td><td>≥2 類零件變型；示教量減少 ≥30%；成功率 ≥85%</td></tr>
+      <tr><td>Y4</td><td>跨產品操作技能遷移與快速部署技術</td><td>跨產品重用與快速部署</td><td>≥2 類產品模組；人工導入工時減少 ≥40%；成功率 ≥90%</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 19 頁｜A3 瑕疵檢測與 NBV
+     ================================================================ -->
+<section class="slide" data-title="A3 瑕疵檢測與 NBV" data-section="三｜A分項：AI機器人自主技能技術">
+  <div class="slide-head"><div class="kicker">A3</div><h2>工業物件瑕疵檢測與 NBV 取像最佳化技術</h2></div>
+  <div class="slide-body">
+    <div class="card"><dl class="method">
+      <dt>技術缺口</dt><dd>固定取像與單視角檢測受金屬反光、曲面、CFRP 紋理、遮蔽及感測器精度限制。</dd>
+      <dt>研究方法</dt><dd>瑕疵偵測／分割＋CAD/ROI 候選視角＋感測器工作距離／入射角／解析度模型＋NBV 資訊增益最佳化＋不確定性驅動補測。</dd>
+      <dt>差異化與驗證</dt><dd>與固定取像路徑、純 CAD 覆蓋規劃比較：同等品質下取像次數、時間、檢出率、誤報率、有效覆蓋率。</dd>
+    </dl></div>
+    <table class="tbl">
+      <tbody><tr><th style="width:8%">年度</th><th style="width:32%">技術項目</th><th style="width:28%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>瑕疵辨識與 CAD 引導取像技術</td><td>金屬瑕疵辨識、CAD/ROI 取像</td><td>≥2 類表面瑕疵；≥3 種幾何特徵</td></tr>
+      <tr><td>Y2</td><td>感測品質約束取像點最佳化技術</td><td>感測品質、工作距離、解析度、角度限制</td><td>有效覆蓋率 ≥95%；取像次數降低 ≥15%</td></tr>
+      <tr><td>Y3</td><td>不確定性驅動主動取像技術</td><td>金屬／CFRP 表面品質預測與取像點</td><td>≥2 類材質；固定誤報率下召回率提高 ≥5 個百分點</td></tr>
+      <tr><td>Y4</td><td>跨工件自主補測與檢測技能重用技術</td><td>主動補測與跨工件重用</td><td>≥2 類工件；同等品質下取像時間降低 ≥20%</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 20 頁｜A 分項對標
+     ================================================================ -->
+<section class="slide" data-title="A分項 預期指標與對標" data-section="三｜A分項：AI機器人自主技能技術">
+  <div class="slide-head"><div class="kicker">A 分項</div><h2>預期指標／國內業界現況／國外對標</h2></div>
+  <div class="slide-body">
+    <table class="tbl">
+      <tbody><tr><th style="width:32%">本計畫四年預期指標</th><th style="width:32%">國內業界發展現況／對標方向</th><th>國外對標標的</th></tr>
+      <tr><td><b>A1</b>｜限制式閉環規劃；限定情境任務成功率 ≥90%</td><td>國內學界有相關研究，尚未落地</td><td>國際 TAMP／具約束規劃研究；Industrial Next</td></tr>
+      <tr><td><b>A2</b>｜跨產品重用；人工導入工時減少 ≥40%</td><td>國內視覺導引、力控裝配與示教解決方案</td><td>Physical Intelligence、Industrial Next；比較資料效率、技能遷移與實體成功率</td></tr>
+      <tr><td><b>A3</b>｜同等品質下取像時間降低 ≥20%</td><td>國內 AOI、金屬與複材表面瑕疵檢測、機器視覺廠商</td><td>國際 Active Vision／NBV／機器人表面檢測研究；需以相同工件及感測條件對標</td></tr>
+    </tbody></table>
+    <p class="muted">說明：上列為技術比較框架，非已核實的國內外性能排名。正式送審應補充特定企業、論文或實驗室的公開方法與相同條件的可比指標。</p>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 21 頁｜章節：B 分項
+     ================================================================ -->
+<section class="slide divider" data-title="章節｜四 B分項" data-section="四｜B分項：AI技能可信驗證技術">
+  <div class="big">04</div>
+  <h2>B分項：AI技能可信驗證技術</h2>
+  <p>以 A2「組裝操作技能」及 A3「瑕疵檢測／NBV 自主取像技能」為共同驗證對象。B1 回答「模擬是否貼近真實」，B2 回答「技能在哪些條件下可靠」。</p>
+</section>
+
+<!-- ================================================================
+     第 22 頁｜B 分項總覽：驗證對象矩陣
+     ================================================================ -->
+<section class="slide" data-title="B分項 驗證對象矩陣" data-section="四｜B分項：AI技能可信驗證技術">
+  <div class="slide-head"><div class="kicker">B 分項總體說明</div><h2>跨技能驗證：同一流程、不同物理／感測模型</h2></div>
+  <div class="slide-body">
+    <p class="small" style="margin:0">B1、B2 共用驗證流程與證據格式，但依技能特性採不同物理／感測模型、失效定義與品質指標。</p>
+    <table class="tbl">
+      <tbody><tr><th style="width:22%">驗證對象</th><th style="width:38%">B1｜虛實差異與有效性</th><th>B2｜失效情境與可信邊界</th></tr>
+      <tr><td><b>A2 組裝操作技能</b><br><span class="muted">Align／Adaptive Insert／Fit Verify</span></td><td>接觸力、摩擦、插入軌跡、控制延遲與實體裝配結果的差異</td><td>位置／姿態偏差、公差、摩擦與接觸變異；評估成功率、卡滯及裝配不完全的可靠操作範圍</td></tr>
+      <tr><td><b>A3 自主檢測技能</b><br><span class="muted">Defect Detection／NBV／Re-inspection</span></td><td>可視性、遮蔽、工作距離、入射角、反光與影像品質的虛實差異</td><td>光照、視角、距離、材質與瑕疵尺寸變異；評估漏檢、誤判、有效覆蓋率與適用邊界</td></tr>
+    </tbody></table>
+    <div class="grid-2">
+      <div class="call"><b>B1</b>：模擬是否貼近真實？量化接觸操作行為及取像品質的虛實差異。</div>
+      <div class="call"><b>B2</b>：技能在哪些條件下可靠？失效情境探索、可靠度及適用邊界評估。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 23 頁｜B1 虛實差異建模
+     ================================================================ -->
+<section class="slide" data-title="B1 虛實差異建模" data-section="四｜B分項：AI技能可信驗證技術">
+  <div class="slide-head"><div class="kicker">B1</div><h2>AI機器人技能虛實差異建模與驗證技術</h2></div>
+  <div class="slide-body">
+    <div class="card small"><dl class="method">
+      <dt>技術缺口</dt><dd>A2 受摩擦、接觸剛性及控制延遲影響；A3 受相機幾何、表面反射、遮蔽、光照及感測品質影響。單靠模擬中的成功率或理想取像結果，無法推估實體部署可靠度。</dd>
+      <dt>研究方法</dt><dd>共用 Real-to-Sim Grounding、實測資料對應、參數敏感度分析、有限實體資料校正與獨立 Sim-to-Real Validity Test；A2 採接觸物理／控制參數模型，A3 採感測幾何與取像品質模型（優先校正與取像決策相關的品質指標，不以完整擬真影像生成為必要成果）。</dd>
+      <dt>差異化與驗證</dt><dd>以未校正模型與一般參數校正為 Baseline，比較 A2 軌跡／接觸力／裝配結果，以及 A3 可視性／有效覆蓋率／影像品質之預測誤差。</dd>
+    </dl></div>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:6%">年度</th><th style="width:26%">技術項目</th><th style="width:36%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>跨技能虛實行為與取像品質對應技術</td><td>A2：位姿、接觸事件對應；A3：取像姿態、可視性及影像品質對應</td><td>涵蓋 ≥2 類技能；各建立 ≥2 項虛實差異指標</td></tr>
+      <tr><td>Y2</td><td>操作接觸與感測品質參數辨識技術</td><td>A2：摩擦／接觸參數；A3：工作距離、入射角、反光及感測品質敏感度</td><td>每類技能辨識 ≥2 項關鍵參數；指定誤差較基準降低 ≥15%</td></tr>
+      <tr><td>Y3</td><td>多類型技能虛實差異校正技術</td><td>以有限實體資料分別校正接觸行為模型與取像品質模型</td><td>A2、A3 各至少 1 項指定預測誤差較未校正降低 ≥25%</td></tr>
+      <tr><td>Y4</td><td>跨技能模擬有效性評估技術</td><td>獨立實體測試，評估操作成功／失敗與取像有效／無效的預測能力</td><td>≥2 類技能；各至少 1 項關鍵預測誤差降低 ≥30%；1 套共通評估流程</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 24 頁｜B2 失效情境與可信邊界
+     ================================================================ -->
+<section class="slide" data-title="B2 失效情境與可信邊界" data-section="四｜B分項：AI技能可信驗證技術">
+  <div class="slide-head"><div class="kicker">B2</div><h2>AI技能失效情境生成與可信邊界評估技術</h2></div>
+  <div class="slide-body">
+    <div class="card small"><dl class="method">
+      <dt>技術缺口</dt><dd>A2 在位姿、公差、摩擦變異下可能卡滯或組裝失敗；A3 在光照、視角、距離、材質與瑕疵尺寸變異下可能漏檢、誤判或取像不足。固定案例難涵蓋變異組合，隨機測試又難定位失效區域。</dd>
+      <dt>研究方法</dt><dd>建立共通 Scenario Schema 與測試管理流程，分別定義 A2／A3 變異參數、失效條件與品質門檻；以 Boundary Sampling、Active Learning／Bayesian Optimization 進行失效導向搜尋，再以獨立樣本估計條件式可靠度及可信操作邊界。</dd>
+      <dt>差異化與驗證</dt><dd>比較固定案例、均勻隨機與主動搜尋：相同測試預算下的失效發現效率、邊界估計誤差及信賴區間。主動搜尋資料不得直接視為無偏的整體成功率樣本。</dd>
+    </dl></div>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:6%">年度</th><th style="width:26%">技術項目</th><th style="width:36%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>多類型技能測試情境參數化技術</td><td>A2：位置、公差、摩擦與接觸；A3：視角、距離、光照、材質與瑕疵尺寸</td><td>≥2 類技能；各 ≥4 類變異參數；1 套共通情境描述方法</td></tr>
+      <tr><td>Y2</td><td>跨技能邊界測試情境生成技術</td><td>產生裝配卡滯／未完成與檢測漏檢／取像不足等邊界情境</td><td>合計自動生成 ≥100 組情境；每類 ≥2 類失效模式</td></tr>
+      <tr><td>Y3</td><td>失效導向主動測試情境搜尋技術</td><td>主動式搜尋 A2 操作失效與 A3 NBV／檢測失效區域</td><td>A2、A3 失效發現效率提升 ≥20%</td></tr>
+      <tr><td>Y4</td><td>跨技能可信操作邊界評估技術</td><td>獨立測試、條件式可靠度、技能版本比較及證據追溯</td><td>失效發現效率提升 ≥30%</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 25 頁｜B 分項對標
+     ================================================================ -->
+<section class="slide" data-title="B分項 預期指標與對標" data-section="四｜B分項：AI技能可信驗證技術">
+  <div class="slide-head"><div class="kicker">B 分項</div><h2>預期指標／國內業界現況／國外對標</h2></div>
+  <div class="slide-body">
+    <table class="tbl">
+      <tbody><tr><th style="width:34%">本計畫四年預期指標</th><th style="width:33%">國內業界發展現況／對標方向</th><th>國外對標標的</th></tr>
+      <tr><td><b>B1</b>｜涵蓋 A2 組裝及 A3 檢測兩類技能；各至少 1 項關鍵虛實預測誤差降低 ≥30%</td><td>國內數位孿生、機器人接觸模擬、機器視覺／取像品質建模技術；實際跨技能驗證能力需逐案盤點</td><td>NVIDIA Isaac 生態、Sim-to-Real 接觸模型與 Active Vision／Sensor Simulation 研究</td></tr>
+      <tr><td><b>B2</b>｜涵蓋 A2／A3；同等預算下各類失效發現效率提升 ≥30%；完成 ≥2 份技能可信評估檔案</td><td>國內機器人測試驗證、工業 AI 檢測可靠度與主動測試研究；對標性能需另行核實</td><td>國際 Active／Adversarial Testing、機器人 Policy Reliability 與 Vision Robustness 評估研究</td></tr>
+    </tbody></table>
+    <p class="muted"><br></p>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 26 頁｜C1 足形機器人移動性能檢測
+     ================================================================ -->
+<section class="slide" data-title="C1 足形機器人性能檢測" data-section="五｜C分項：足形服務型機器人性能檢測技術">
+  <div class="slide-head"><div class="kicker">C 分項 · C1</div><h2>足形服務型機器人移動性能檢測技術</h2></div>
+  <div class="slide-body">
+    <div class="card small"><dl class="method">
+      <dt>技術缺口</dt><dd>足形機器人的地形通行、動態擾動、空間路徑與停止性能，需要可重複、可比較的測試方法。</dd>
+      <dt>研究方法</dt><dd>依 ISO 18646-5:2026 適用條文建立量測程序、設備與不確定度分析。[S8]</dd>
+      <dt>差異化與驗證</dt><dd>與基準量測程序比較：量測重複性、誤差、不確定度、程序符合性與測試報告一致性。</dd>
+    </dl></div>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:6%">年度</th><th style="width:28%">技術項目</th><th style="width:42%">研究內容</th><th>量化指標</th></tr>
+      <tr><td>Y1</td><td>地形適應與通行穩定特性測試技術</td><td>A形、M形、V形斜面通過穩定性</td><td>≥3 類地形條件</td></tr>
+      <tr><td>Y2</td><td>動態擾動與階梯通行特性測試技術</td><td>瞬時衝擊穩定性、樓梯通行性能</td><td>≥2 項通行特性</td></tr>
+      <tr><td>Y3</td><td>空間適應與路徑控制特性測試技術</td><td>最低通過高度適應性、最大溝槽跨越性能、路徑偏差控制性能</td><td>≥3 種空間／路徑條件</td></tr>
+      <tr><td>Y4</td><td>停止與動力移動特性測試技術</td><td>停止距離、最大爬升高度通過性能、最大拖曳力性能</td><td>≥1 項停止特性、≥2 種動力移動特性</td></tr>
+    </tbody></table>
+    <table class="tbl sm">
+      <tbody><tr><th style="width:30%">四年預期指標</th><th style="width:33%">國內現況</th><th>國外對標</th></tr>
+      <tr><td>ISO 18646-5 性能測試方法；完成程序與不確定度分析</td><td>國內尚無 ISO 18646-5 相關機器人性能檢測單位</td><td>標準尚處發展階段，國際間尚未形成普遍化的正式檢測服務市場</td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 27 頁｜年度整合 Demo
+     ================================================================ -->
+<section class="slide" data-title="年度整合 Demo 與審查重點" data-section="六｜年度整合 Demo、審查與風險控制">
+  <div class="slide-head"><div class="kicker">六｜年度情境規劃</div><h2>年度落地情境內容&nbsp;</h2></div>
+  <div class="slide-body">
+    <table class="tbl">
+      <tbody><tr><th style="width:7%">年度</th><th style="width:38%">A＋B 整合 Demo</th><th style="width:24%">C 檢測展示</th><th></th></tr>
+      <tr><td class="tag">Y1</td><td>多任務目標下自主生成 Pick／Place／Align 技能鏈；CAD 引導取像</td><td>地形適應與通行穩定量測</td><td></td></tr>
+      <tr><td class="tag">Y2</td><td>Adaptive Insert 接觸式裝配＋感測品質約束取像</td><td>動態擾動與階梯通行測試</td><td></td></tr>
+      <tr><td class="tag">Y3</td><td>不同零件下技能重用＋主動取像；主動失效搜尋</td><td>空間適應與路徑控制量測</td><td></td></tr>
+      <tr><td class="tag">Y4</td><td>跨產品自主組裝與主動補測；閉環重規劃與可信操作邊界</td><td>停止與動力移動性能量測</td><td><br></td></tr>
+    </tbody></table>
+  </div>
+</section>
+
+<!-- ================================================================
+     第 28 頁｜審查交付物與範圍控制
+     ================================================================ -->
+
+
+<!-- ================================================================
+     第 29 頁｜資料來源
+     ================================================================ -->
+<section class="slide" data-title="資料來源與查證說明" data-section="資料來源">
+  <div class="slide-head"><div class="kicker">REFERENCES</div><h2>資料來源與查證說明</h2></div>
+  <div class="slide-body">
+    <p class="small" style="margin:0">市場預測、實際安裝量、受訪者觀點與標準內容採不同標示。所有候選 KPI 為本計畫研擬目標，不是來源所宣稱之既有性能。</p>
+    <ol class="sources">
+      <li><b>S1</b>｜<a href="https://www.itis.org.tw/NetReport_Detail.aspx?rpno=260605777" target="_blank" rel="noopener">工研院產科國際所（2024/05）／ITIS 工業機器人市場與少量多樣需求</a></li>
+      <li><b>S2</b>｜<a href="https://ifr.org/ifr-press-releases/global-robot-demand-in-factories-doubles-over-10-years" target="_blank" rel="noopener">IFR World Robotics 2025 全球工業機器人統計</a></li>
+      <li><b>S3</b>｜<a href="https://www.ctimes.com.tw/%E6%A9%9F%E5%99%A8%E4%BA%BA/2605061044FE.shtml" target="_blank" rel="noopener">CTIMES 2026/05/06 專訪 TAIROA 理事長絲國一</a></li>
+      <li><b>S4</b>｜<a href="https://www.tca.org.tw/tca_news1.php?a=y&amp;n=2510" target="_blank" rel="noopener">台北市電腦公會 2026/05/18 專訪達明機器人營運長黃識忠</a></li>
+      <li><b>S5</b>｜<a href="https://udn.com/news/story/7241/9273346" target="_blank" rel="noopener">經濟日報 2026/01/19 黃識忠談機器人產線落地</a></li>
+      <li><b>S6</b>｜<a href="https://www.automan.tw/tw/news-detail/newsList/Views/how-to-create-Taiwan-long-term-robotics-advantage-Drhu" target="_blank" rel="noopener">工研院副院長胡竹生 2025/03/05 專訪</a></li>
+      <li><b>S7</b>｜<a href="https://www.tairoa.org.tw/column/column.aspx?column_id=17662&amp;column_type_id=1" target="_blank" rel="noopener">TAIROA 2026 AI 機器人技術應用與國際標準研討會</a></li>
+      <li><b>S8</b>｜<a href="https://www.iso.org/standard/86850.html" target="_blank" rel="noopener">ISO 18646-5:2026 標準官方摘要</a></li>
+      <li><b>S9</b>｜<a href="https://www.cna.com.tw/news/afe/202510180018.aspx" target="_blank" rel="noopener">中央社 2025/10/18 達明 AI 視覺與產業應用</a></li></ol>
+  </div>
+</section>
+
+</div></main>
+
+<!-- ================================================================
+     工具列（不需修改）
+     ================================================================ -->
+<nav id="toolbar">
+  <button id="btnPrev" title="上一頁 (←)">◀</button>
+  <span id="counter">28 / 28</span>
+  <button id="btnNext" title="下一頁 (→)">▶</button>
+  <select id="jump" title="跳至頁面"></select>
+  <span class="spacer"></span>
+  <button id="btnDup" class="edit-only" title="複製目前頁面">複製本頁</button>
+  <button id="btnDel" class="edit-only" title="刪除目前頁面">刪除本頁</button>
+  <button id="btnEdit" title="切換編輯模式 (E)" class="">✎ 編輯</button>
+  <button id="btnSave" title="存成新的 HTML 檔 (Ctrl+S)">💾 存檔</button>
+  <button id="btnPrint" title="列印或輸出 PDF (P)">🖨 PDF</button>
+</nav>
+
+<!-- ================================================================
+     程式：換頁 / 縮放 / 編輯 / 存檔（一般編輯內容不需改動）
+     ================================================================ -->
+<script>
+(() => {
+  const stage = document.getElementById('stage');
+  const $ = id => document.getElementById(id);
+  let slides = [], cur = 0, editing = false;
+
+  /* 重新收集頁面並更新頁碼、頁面選單 */
+  function refresh() {
+    slides = [...stage.querySelectorAll('.slide')];
+    const jump = $('jump');
+    jump.innerHTML = '';
+    slides.forEach((s, i) => {
+      s.dataset.page = (i + 1) + ' / ' + slides.length;
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = (i + 1) + '. ' + (s.dataset.title || '未命名頁面');
+      jump.appendChild(o);
+    });
+    if (cur >= slides.length) cur = slides.length - 1;
+    show(cur);
+  }
+
+  /* 顯示第 i 頁 */
+  function show(i) {
+    cur = Math.max(0, Math.min(i, slides.length - 1));
+    slides.forEach((s, k) => s.classList.toggle('active', k === cur));
+    $('counter').textContent = (cur + 1) + ' / ' + slides.length;
+    $('jump').value = cur;
+    history.replaceState(null, '', '#' + (cur + 1));
+  }
+
+  /* 依視窗大小等比例縮放 1280×720 版面 */
+  function fit() {
+    const w = innerWidth, h = innerHeight - 52;
+    stage.style.transform = 'scale(' + Math.min(w / 1280, h / 720) * 0.98 + ')';
+  }
+
+  /* 編輯模式：開啟 contenteditable */
+  function setEditing(on) {
+    editing = on;
+    document.body.classList.toggle('editing', on);
+    $('btnEdit').classList.toggle('on', on);
+    $('btnEdit').textContent = on ? '✔ 完成編輯' : '✎ 編輯';
+    slides.forEach(s => on ? s.setAttribute('contenteditable', 'true') : s.removeAttribute('contenteditable'));
+  }
+
+  /* 存檔：輸出目前內容為新的 HTML 檔（移除編輯狀態） */
+  function save() {
+    const doc = document.documentElement.cloneNode(true);
+    doc.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
+    doc.querySelectorAll('.slide').forEach(e => { e.classList.remove('active'); e.removeAttribute('data-page'); });
+    doc.querySelector('body').classList.remove('editing');
+    doc.querySelector('#stage').removeAttribute('style');
+    doc.querySelector('#jump').innerHTML = '';
+    const html = '<!DOCTYPE html>\n' + doc.outerHTML;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    const name = decodeURIComponent(location.pathname.split('/').pop() || 'slides.html');
+    a.download = name.endsWith('.html') ? name : 'slides.html';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  /* 複製 / 刪除目前頁面 */
+  function duplicate() {
+    const c = slides[cur].cloneNode(true);
+    c.dataset.title = (c.dataset.title || '') + '（副本）';
+    slides[cur].after(c);
+    cur++; refresh(); setEditing(true);
+  }
+  function remove() {
+    if (slides.length <= 1) return;
+    if (!confirm('確定刪除第 ' + (cur + 1) + ' 頁？')) return;
+    slides[cur].remove(); refresh();
+  }
+
+  /* 事件綁定 */
+  $('btnPrev').onclick = () => show(cur - 1);
+  $('btnNext').onclick = () => show(cur + 1);
+  $('jump').onchange = e => show(+e.target.value);
+  $('btnEdit').onclick = () => setEditing(!editing);
+  $('btnSave').onclick = save;
+  $('btnPrint').onclick = () => print();
+  $('btnDup').onclick = duplicate;
+  $('btnDel').onclick = remove;
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); return; }
+    const typing = editing && document.activeElement && document.activeElement.isContentEditable;
+    if (typing) { if (e.key === 'Escape') { document.activeElement.blur(); } return; }
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': case ' ': e.preventDefault(); show(cur + 1); break;
+      case 'ArrowLeft':  case 'PageUp':   e.preventDefault(); show(cur - 1); break;
+      case 'Home': show(0); break;
+      case 'End':  show(slides.length - 1); break;
+      case 'e': case 'E': setEditing(!editing); break;
+      case 'p': case 'P': print(); break;
+    }
+  });
+  addEventListener('resize', fit);
+
+  /* 初始化：支援網址 #頁碼 直接開啟指定頁 */
+  cur = Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1);
+  refresh(); fit();
+})();
+</script>
+
+
+</body></html>

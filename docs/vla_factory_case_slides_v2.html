@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VLA 工廠部署案例分享｜Siemens Packaging Task</title>
+<style>
+:root{
+  --bg:#f6f8fb; --ink:#14213d; --muted:#5d6475; --blue:#1f6feb; --teal:#0e9f9a; --orange:#f59e0b; --red:#d94b4b; --green:#3aa76d; --card:#ffffff; --line:#d9e1ec;
+  --shadow:0 18px 50px rgba(20,33,61,.12);
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;overflow:hidden}
+.deck{width:100vw;height:100vh;position:relative}.slide{position:absolute;inset:0;display:none;padding:5.6vh 6.5vw;background:linear-gradient(135deg,#f7faff 0%,#eef4fb 100%)}.slide.active{display:block}.slide:after{content:attr(data-no) " / 23";position:absolute;right:3vw;bottom:2.4vh;color:#758096;font-size:16px}.kicker{letter-spacing:.08em;color:var(--blue);font-weight:800;font-size:20px;text-transform:uppercase}.title{font-size:58px;line-height:1.08;margin:14px 0 22px;font-weight:900}.subtitle{font-size:28px;line-height:1.42;color:var(--muted);max-width:980px}.h1{font-size:44px;line-height:1.14;margin:0 0 30px;font-weight:900}.h2{font-size:32px;line-height:1.24;margin:0 0 16px;font-weight:850}.p{font-size:24px;line-height:1.55;color:#26324b}.small{font-size:18px;color:var(--muted);line-height:1.5}.grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:42px;align-items:center}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:26px;box-shadow:var(--shadow)}.metric{font-size:66px;font-weight:950;color:var(--blue);line-height:1}.label{font-size:22px;color:var(--muted);margin-top:8px}.tag{display:inline-block;border:1px solid #bcd3ff;background:#eaf2ff;color:#1f5fb8;border-radius:999px;padding:9px 16px;font-weight:800;margin:6px 6px 6px 0}.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.ok{background:#ecfdf5;border-color:#bbf7d0;color:#047857}.flow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.step{background:#fff;border:2px solid var(--line);border-radius:22px;padding:18px 20px;font-size:22px;font-weight:800;min-width:150px;text-align:center;box-shadow:0 10px 28px rgba(20,33,61,.08)}.arrow{font-size:34px;color:#8ba0bd}.bar{height:36px;background:#e7edf6;border-radius:999px;overflow:hidden;margin:14px 0}.bar span{display:block;height:100%;border-radius:999px}.b1{background:var(--red)}.b2{background:var(--orange)}.b3{background:var(--blue)}.b4{background:var(--green)}.chartrow{display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:center;margin:20px 0}.pct{font-size:38px;font-weight:950}.timeline{position:relative;margin-top:22px}.timeline:before{content:"";position:absolute;left:26px;top:0;bottom:0;width:4px;background:#c9d5e7}.titem{position:relative;margin:0 0 22px 78px;background:#fff;border:1px solid var(--line);border-radius:22px;padding:20px 24px;box-shadow:0 10px 28px rgba(20,33,61,.07)}.titem:before{content:"";position:absolute;left:-62px;top:24px;width:24px;height:24px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 8px #eaf2ff}.quote{font-size:34px;line-height:1.36;font-weight:850;border-left:8px solid var(--blue);padding-left:26px;color:#17233d}.note{position:absolute;left:6.5vw;bottom:3vh;font-size:15px;color:#7a8599}.nav{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:12px;z-index:5}.nav button{border:0;border-radius:999px;padding:12px 18px;background:#14213d;color:#fff;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}.progress{position:fixed;left:0;top:0;height:5px;background:var(--blue);z-index:6;width:0}.table{width:100%;border-collapse:collapse;font-size:22px;background:#fff;border-radius:22px;overflow:hidden;box-shadow:var(--shadow)}.table th,.table td{padding:18px 20px;border-bottom:1px solid var(--line);text-align:left}.table th{background:#eef4ff;color:#193b7a}.table tr:last-child td{border-bottom:0}.emoji{font-size:52px;margin-bottom:12px}.center{display:grid;place-items:center;text-align:center;height:75vh}.big{font-size:84px;font-weight:950;line-height:1.02}.pillbox{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.source{font-size:16px;color:#7a8599;margin-top:18px}.splitTitle{display:flex;align-items:flex-start;justify-content:space-between;gap:30px}.qr{font-size:18px;color:var(--muted);text-align:right;max-width:360px}.visual{min-height:320px;border-radius:32px;background:radial-gradient(circle at 25% 25%,#cfe5ff,transparent 32%),radial-gradient(circle at 80% 25%,#d8fff6,transparent 30%),linear-gradient(135deg,#fff,#edf5ff);border:1px solid var(--line);box-shadow:var(--shadow);padding:32px;display:flex;align-items:center;justify-content:center}.robot{font-size:120px}.boxline{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.mini{background:white;border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;font-weight:850;color:#24324d;min-height:110px;display:grid;place-items:center}.em{color:var(--blue);font-weight:950}.caption{font-size:20px;color:var(--muted);margin-top:10px;line-height:1.45}@media print{body{overflow:visible}.slide{display:block;position:relative;page-break-after:always;width:100vw;height:100vh}.nav,.progress{display:none}}
+</style>
+</head>
+<body>
+<div class="progress" id="prog"></div>
+<div class="deck" id="deck">
+
+<section class="slide active" data-no="1">
+  <div class="center">
+    <div>
+      <div class="kicker">Internal Case Sharing</div>
+      <div class="title">VLA 進工廠：<br>一個 Siemens 包裝任務部署案例</div>
+      <div class="subtitle">從 pretrained π0.5 到現場任務：流程、失敗模式與工程啟示</div>
+      <div class="source">Source: arXiv:2605.27461, Siemens Corporation, 2026-05-25</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-no="2">
+  <div class="grid2">
+    <div>
+      <div class="h1">這篇文章的核心價值</div>
+      <p class="p">不是提出新模型，而是揭露一個 pretrained VLA 要進入真實工廠任務時，背後需要多少部署工程。</p>
+      <div class="pillbox"><span class="tag">Factory-floor deployment</span><span class="tag">π0.5 fine-tuning</span><span class="tag warn">Failure-driven iteration</span></div>
+    </div>
+    <div class="card">
+      <div class="metric">2,535</div><div class="label">episodes</div><br>
+      <div class="metric">≈10h</div><div class="label">on-site robot data</div><br>
+      <div class="metric">2 weeks</div><div class="label">limited factory window</div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-no="3">
+  <div class="splitTitle"><div class="h1">任務看似簡單</div><div class="qr">把透明配件袋從料箱取出，放入已裝主產品的紙盒空腔，並壓到可關盒高度以下。</div></div>
+  <div class="flow" style="margin-top:50px">
+    <div class="step">辨識透明袋</div><div class="arrow">→</div><div class="step">抓取空白區</div><div class="arrow">→</div><div class="step">放入紙盒空腔</div><div class="arrow">→</div><div class="step">推入附件</div><div class="arrow">→</div><div class="step">壓平完成</div>
+  </div>
+  <div class="visual" style="margin-top:48px"><div class="robot">🤖 📦 🛍️</div></div>
+</section>
+
+<section class="slide" data-no="4">
+  <div class="h1">真正難點：不是 pick-and-place</div>
+  <div class="grid3">
+    <div class="card"><div class="emoji">👁️</div><div class="h2">透明與重疊</div><p class="small">袋子邊界不清楚，容易一次抓到多袋。</p></div>
+    <div class="card"><div class="emoji">🧩</div><div class="h2">袋內狀態變動</div><p class="small">說明書、接頭、線材位置每次不同，影響可抓區域。</p></div>
+    <div class="card"><div class="emoji">📏</div><div class="h2">成功條件嚴格</div><p class="small">不是放進盒子就好，內容物不能高於關盒平面。</p></div>
+  </div>
+</section>
+
+<section class="slide" data-no="5">
+  <div class="h1">硬體與軟體配置</div>
+  <div class="grid2">
+    <div class="card"><div class="h2">Robot Cell</div><p class="p">雙 UR7e、Robotiq 2F-85、客製 3D 列印 fingertips、固定料箱與紙盒、額外光源。</p></div>
+    <div class="card"><div class="h2">VLA Stack</div><p class="p">π0.5 pretrained policy + OpenPI fine-tuning；RTX 5090 IPC 執行 rollout；非同步推論與 real-time action chunking。</p></div>
+  </div>
+</section>
+
+<section class="slide" data-no="6">
+  <div class="h1">Teleoperation 不是配角</div>
+  <div class="grid2">
+    <div>
+      <p class="p">示範資料透過 Meta Quest 3 控制 end-effector pose 取得。團隊花大量工程改善遙操作的平順、反應與安全。</p>
+      <div class="pillbox"><span class="tag">Interpolation</span><span class="tag">500Hz UR control</span><span class="tag">Impedance control</span><span class="tag">Collision avoidance</span></div>
+    </div>
+    <div class="quote">資料品質不是只在 dataset，從控制堆疊就開始。</div>
+  </div>
+</section>
+
+<section class="slide" data-no="7">
+  <div class="h1">第一個教訓：不能直接模仿人類 SOP</div>
+  <div class="grid2">
+    <div class="card"><div class="emoji">🔁</div><div class="h2">Shake the bag</div><p class="small">重複、高速、需要記憶「搖了幾次、夠不夠」。VLA 缺少 stateful memory 時難以穩定重現。</p></div>
+    <div class="card"><div class="emoji">〰️</div><div class="h2">Curling the bag</div><p class="small">需要高靈巧度，也難以透過 teleoperation 穩定示範。</p></div>
+  </div>
+</section>
+
+<section class="slide" data-no="8">
+  <div class="h1">改成 VLA-friendly execution strategy</div>
+  <div class="flow" style="margin-top:40px">
+    <div class="step">單臂抓袋</div><div class="arrow">→</div><div class="step">抬高</div><div class="arrow">→</div><div class="step">利用重力沉降</div><div class="arrow">→</div><div class="step">插入空腔</div><div class="arrow">→</div><div class="step">另一臂推入／壓平</div>
+  </div>
+  <div class="quote" style="margin-top:56px">重點不是讓 AI 完全學人，而是重新設計流程，讓任務變得可學、可示範、可驗證。</div>
+</section>
+
+<section class="slide" data-no="9">
+  <div class="h1">資料蒐集不是一次到位：逐步放寬限制</div>
+  <div class="timeline">
+    <div class="titem"><b>SP｜Settled Parts</b><br><span class="small">袋內物件集中一側，形成明顯 empty / filled side。</span></div>
+    <div class="titem"><b>NR｜No Reposition</b><br><span class="small">袋子預先擺成可安全抓取，不要求先翻整。</span></div>
+    <div class="titem"><b>RC｜Reduced Count</b><br><span class="small">減少料箱內袋數，降低透明袋重疊與邊界混淆。</span></div>
+  </div>
+</section>
+
+<section class="slide" data-no="10">
+  <div class="h1">Dataset Breakdown</div>
+  <div class="chartrow"><div class="pct">693</div><div><b>Constrained: SP + NR + RC</b><div class="bar"><span class="b3" style="width:27.3%"></span></div><span class="small">27.3%</span></div></div>
+  <div class="chartrow"><div class="pct">199</div><div><b>Constrained: SP + RC</b><div class="bar"><span class="b2" style="width:7.9%"></span></div><span class="small">7.9%</span></div></div>
+  <div class="chartrow"><div class="pct">242</div><div><b>Recovery Scenarios</b><div class="bar"><span class="b1" style="width:9.5%"></span></div><span class="small">9.5%</span></div></div>
+  <div class="chartrow"><div class="pct">1,401</div><div><b>Unconstrained Full Task</b><div class="bar"><span class="b4" style="width:55.3%"></span></div><span class="small">55.3%</span></div></div>
+</section>
+
+<section class="slide" data-no="11">
+  <div class="h1">三輪訓練與驗證邏輯</div>
+  <table class="table">
+    <tr><th>Round</th><th>Episodes</th><th>目的</th><th>訓練</th></tr>
+    <tr><td>1</td><td>693</td><td>先學 nominal execution</td><td>LoRA, 30k steps</td></tr>
+    <tr><td>2</td><td>199</td><td>加入 reposition / correction</td><td>LoRA, 30k steps</td></tr>
+    <tr><td>3</td><td>1,401</td><td>接近 production-like setting</td><td>Full fine-tuning, 60k steps</td></tr>
+  </table>
+  <p class="p"><span class="em">Gate：</span>每一輪評估至少 70% success，才進入下一階段難度。</p>
+</section>
+
+<section class="slide" data-no="12">
+  <div class="h1">部署 pipeline：真正成本在迭代</div>
+  <div class="flow" style="margin-top:55px">
+    <div class="step">Data</div><div class="arrow">→</div><div class="step">Curation</div><div class="arrow">→</div><div class="step">Fine-tune</div><div class="arrow">→</div><div class="step">Evaluate</div><div class="arrow">→</div><div class="step">Failure taxonomy</div><div class="arrow">→</div><div class="step">Recovery data</div>
+  </div>
+  <div class="quote" style="margin-top:70px">不是 Collect → Train → Deploy，而是 failure-driven loop。</div>
+</section>
+
+<section class="slide" data-no="13">
+  <div class="h1">最終評估設計</div>
+  <div class="grid3">
+    <div class="card"><div class="metric">30</div><div class="label">bags per bin</div></div>
+    <div class="card"><div class="metric">1 min</div><div class="label">time limit / bag</div></div>
+    <div class="card"><div class="metric">3</div><div class="label">evaluation trials</div></div>
+  </div>
+  <p class="p">Trial 1 保留 SP；Trial 2、3 為 fully unconstrained。無論成功或失敗，每袋結束後都會移除，直到料箱清空。</p>
+</section>
+
+<section class="slide" data-no="14">
+  <div class="h1">結果重點：成功率沒有達到期待</div>
+  <div class="center" style="height:62vh">
+    <div>
+      <div class="big">Failure taxonomy<br>比單一成功率更有價值</div>
+      <p class="subtitle" style="margin:auto;margin-top:25px">文章將重點放在失敗模式分析，而非宣稱工業任務已穩定完成。</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-no="15">
+  <div class="h1">主要失敗模式：Trials 2 & 3</div>
+  <table class="table">
+    <tr><th>Failure Type</th><th>Overall</th><th>含意</th></tr>
+    <tr><td>Bag contents remain on product</td><td><b>65%</b></td><td>觀測不足 + 線材/接頭動態難處理</td></tr>
+    <tr><td>Multiple bags grasped</td><td><b>23%</b></td><td>透明袋邊界辨識失敗</td></tr>
+    <tr><td>Bag not fully inserted</td><td><b>15%</b></td><td>視角遮蔽與上游誤差連鎖</td></tr>
+    <tr><td>Poor / failed grasps</td><td><b>15%</b></td><td>抓取深度、角度、空白區判斷不足</td></tr>
+  </table>
+</section>
+
+<section class="slide" data-no="16">
+  <div class="h1">對工業導入的 5 個啟示</div>
+  <div class="boxline">
+    <div class="mini">控制延遲會污染示範資料</div>
+    <div class="mini">觀測可得性 > 模型容量</div>
+    <div class="mini">需要 recovery data</div>
+    <div class="mini">需要更細指標</div>
+  </div>
+  <div class="card" style="margin-top:28px"><p class="p">VLA deployment 的瓶頸常在 teleoperation、camera view、hardware morphology、runtime inference、資料治理，而不只是 foundation model。</p></div>
+</section>
+
+
+<section class="slide" data-no="17">
+  <div class="h1">先釐清：IL 與 VLA 不是二選一</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="h2">IL｜Imitation Learning</div>
+      <p class="p"><b>描述「怎麼學」</b></p>
+      <p class="small">從人類示範學習 Observation → Action。ACT、Diffusion Policy 都是典型 task-specific IL policy。</p>
+    </div>
+    <div class="card">
+      <div class="h2">VLA｜Vision-Language-Action</div>
+      <p class="p"><b>描述「模型吃什麼、輸出什麼」</b></p>
+      <p class="small">以視覺 + 語言 + robot state 為條件，直接產生 robot action，並通常追求跨任務泛化。</p>
+    </div>
+  </div>
+  <div class="quote" style="margin-top:36px">π0 / π0.5 可以同時是 <span class="em">VLA</span>，也大量使用 <span class="em">Imitation Learning</span> 訓練。</div>
+</section>
+
+<section class="slide" data-no="18">
+  <div class="h1">更好的分類方式：拆成 3 個軸</div>
+  <div class="grid3">
+    <div class="card"><div class="h2">① 怎麼學？</div><p class="p">IL / Behavior Cloning<br>RL / Offline RL<br>Pretraining + Fine-tuning</p></div>
+    <div class="card"><div class="h2">② 看什麼？</div><p class="p">State → Action<br>Vision + State → Action<br><b>Vision + Language + State → Action</b></p></div>
+    <div class="card"><div class="h2">③ Action 怎麼生？</div><p class="p">Direct regression<br>Action Chunking<br>Diffusion<br>Flow Matching<br>Action Tokens</p></div>
+  </div>
+  <p class="caption">因此「ACT vs π0」不只是模型大小差異，而是 task-specific policy 與 foundation/generalist policy 的不同定位。</p>
+</section>
+
+<section class="slide" data-no="19">
+  <div class="h1">主流 IL / VLA 方法放在同一張圖看</div>
+  <table class="table" style="font-size:19px">
+    <tr><th>方法</th><th>定位</th><th>Language</th><th>Pretrained General Knowledge</th><th>Action 生成</th></tr>
+    <tr><td><b>ACT</b></td><td>Task-specific IL</td><td>通常 ✕</td><td>✕</td><td>Transformer Action Chunk</td></tr>
+    <tr><td><b>Diffusion Policy</b></td><td>Task-specific IL</td><td>通常 ✕</td><td>✕</td><td>Diffusion trajectory</td></tr>
+    <tr><td><b>SmolVLA</b></td><td>Lightweight VLA</td><td>✓</td><td>✓</td><td>Flow Matching</td></tr>
+    <tr><td><b>π0</b></td><td>Foundation VLA</td><td>✓</td><td>✓</td><td>Flow Matching Action Chunk</td></tr>
+    <tr><td><b>π0.5</b></td><td>Generalist VLA</td><td>✓</td><td>✓</td><td>Flow Matching Action Chunk</td></tr>
+    <tr><td><b>LeRobot</b></td><td>Framework / Ecosystem</td><td>—</td><td>—</td><td>可承載多種 policy</td></tr>
+  </table>
+</section>
+
+<section class="slide" data-no="20">
+  <div class="h1">LeRobot 不應該拿來和 π0 直接比較</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="h2">LeRobot</div>
+      <p class="p">資料蒐集、dataset、訓練、evaluation、robot interface 與 deployment 的開源工具鏈。</p>
+      <div class="pillbox"><span class="tag">ACT</span><span class="tag">Diffusion</span><span class="tag">SmolVLA</span><span class="tag">π 系列</span></div>
+    </div>
+    <div class="card">
+      <div class="h2">π0 / π0.5</div>
+      <p class="p">真正的 robot foundation policy / VLA 模型。</p>
+      <p class="small">比較像「PyTorch vs ResNet」：前者是工具鏈，後者才是模型。</p>
+    </div>
+  </div>
+  <div class="quote" style="margin-top:38px">研究選型時應比較 <b>ACT / Diffusion Policy / SmolVLA / π0 / π0.5</b>；LeRobot 放在底層實驗平台。</div>
+</section>
+
+<section class="slide" data-no="21">
+  <div class="h1">VLA 沒有取代 IL：真正改變的是「技能起點」</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="h2">傳統 Task-specific IL</div>
+      <div class="flow"><div class="step">本任務示範</div><div class="arrow">→</div><div class="step">ACT / Diffusion</div><div class="arrow">→</div><div class="step">單一技能</div></div>
+      <p class="small">每個新任務主要靠自己的 demonstrations 建立 policy。</p>
+    </div>
+    <div class="card">
+      <div class="h2">Foundation VLA</div>
+      <div class="flow"><div class="step">大規模 Pretraining</div><div class="arrow">→</div><div class="step">Task Data</div><div class="arrow">→</div><div class="step">Fine-tune</div></div>
+      <p class="small">希望利用既有語意、視覺與動作 prior，降低新任務學習成本並提高泛化。</p>
+    </div>
+  </div>
+  <div class="quote" style="margin-top:32px">真正值得追的 KPI：<b>Foundation VLA 能把 task-specific data + validation 成本降低多少？</b></div>
+</section>
+
+<section class="slide" data-no="22">
+  <div class="h1">給我們專案的討論點</div>
+  <div class="grid2">
+    <div class="card"><div class="h2">新增技能未必比較便宜</div><p class="small">工程成本從寫 robot program，轉移成資料、訓練、驗證、失敗修復與 runtime infrastructure。</p></div>
+    <div class="card"><div class="h2">Demo 應採分年遞進</div><p class="small">先做 constrained task + failure taxonomy，再加入變異、recovery、人機介入與自動化評估。</p></div>
+  </div>
+  <div class="quote" style="margin-top:38px">比較對象不是「Programming vs No Programming」，而是「Explicit Engineering vs Data-driven Engineering」。</div>
+</section>
+
+<section class="slide" data-no="23">
+  <div class="center">
+    <div>
+      <div class="kicker">Takeaway</div>
+      <div class="big">VLA 不是省掉工程，<br>而是改變工程型態。</div>
+      <p class="subtitle" style="margin:auto;margin-top:30px">真正要建立的是：可蒐集、可稽核、可評估、可回復、可持續改善的技能部署流程。</p>
+      <div class="source">References: arXiv:2605.27461; ACT; Diffusion Policy; Physical Intelligence π0/π0.5; Hugging Face LeRobot / SmolVLA</div>
+    </div>
+  </div>
+</section>
+
+</div>
+<div class="nav"><button onclick="prev()">← 上一頁</button><button onclick="next()">下一頁 →</button></div>
+<script>
+const slides=[...document.querySelectorAll('.slide')]; let idx=0;
+function show(i){idx=(i+slides.length)%slides.length;slides.forEach((s,n)=>s.classList.toggle('active',n===idx));document.getElementById('prog').style.width=((idx+1)/slides.length*100)+'%';}
+function next(){show(idx+1)} function prev(){show(idx-1)}
+document.addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){next()} if(['ArrowLeft','PageUp'].includes(e.key)){prev()} if(e.key==='Home'){show(0)} if(e.key==='End'){show(slides.length-1)}}); show(0);
+</script>
+</body>
+</html>
